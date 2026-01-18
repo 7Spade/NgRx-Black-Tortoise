@@ -51,4 +51,5 @@ export interface ContextState {
     partners: PartnerContext[];
   };
   history: ContextSwitchEvent[];
+  currentWorkspaceId: string | null; // Single source of truth for active workspace
 }
