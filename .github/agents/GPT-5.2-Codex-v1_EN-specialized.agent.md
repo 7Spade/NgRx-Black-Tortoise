@@ -86,43 +86,16 @@ Step 10: 完成檢查清單
 
 src/app/
 ├── domain/                   # 核心業務模型與規則
-│   ├── models/
-│   ├── policies/
-│   └── types/
 │
 ├── application/              # NgRx Signals Store 層
-│   └── stores/
-│       ├── auth.store.ts
-│       ├── workspace.store.ts
-│       ├── task.store.ts
-│       └── event-bus.store.ts
 │
 ├── infrastructure/           # Firebase / API / Repository
-│   ├── firebase/
-│   │   ├── workspace.repository.ts
-│   │   ├── task.repository.ts
-│   │   └── account.repository.ts
-│   └── services/
 │
-├── interfaces/               # UI / Component / Pages
-│   ├── components/
-│   ├── pages/
-│   └── guards/
+├── presentation/               # UI / Component / Pages
 │
 ├── shared/                   # 共用元件 / utils / pipes / services
-│   ├── components/
-│   ├── services/
-│   ├── utils/
-│   ├── validators/
-│   └── models/
 │
 ├── assets/
-│   ├── data/
-│   ├── docs/
-│   ├── fonts/
-│   ├── images/
-│   ├── styles/
-│   └── tmp/logs/
 │
 ├── dataconnect-generated/
 │   ├── angular/
