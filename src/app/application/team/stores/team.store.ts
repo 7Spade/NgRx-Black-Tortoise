@@ -18,7 +18,7 @@ import { pipe, switchMap, tap, catchError, of } from 'rxjs';
 import { tapResponse } from '@ngrx/operators';
 import { initialTeamState } from './team.state';
 import { Team } from '@domain/team';
-import { TeamService } from '@infrastructure/team/services/team.service';
+import { TEAM_REPOSITORY } from '@application/tokens';
 import { OrganizationStore } from '@application/organization/stores/organization.store';
 
 export const TeamStore = signalStore(
@@ -31,7 +31,7 @@ export const TeamStore = signalStore(
     hasSelectedTeam: computed(() => selectedTeam() !== null),
     activeTeams: computed(() => teams().filter((t) => t.status === 'active')),
   })),
-  withMethods((store, teamService = inject(TeamService)) => {
+  withMethods((store, teamService = inject(TEAM_REPOSITORY)) => {
     // Load teams for a specific organization
     const loadOrganizationTeamsEffect = rxMethod<string>(
       pipe(

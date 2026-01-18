@@ -18,7 +18,7 @@ import { pipe, switchMap, tap, catchError, of } from 'rxjs';
 import { tapResponse } from '@ngrx/operators';
 import { initialAccountState } from './account.state';
 import { Account } from '@domain/account';
-import { AccountFirestoreService } from '@infrastructure/account/services/account.service';
+import { ACCOUNT_REPOSITORY } from '@application/tokens';
 import { AuthStore } from '@application/auth/stores/auth.store';
 
 type AccountState = typeof initialAccountState;
@@ -61,7 +61,7 @@ export const AccountStore = signalStore(
     // Account count
     accountCount: computed(() => accounts().length),
   })),
-  withMethods((store, accountService = inject(AccountFirestoreService)) => {
+  withMethods((store, accountService = inject(ACCOUNT_REPOSITORY)) => {
     // Load accounts for the current user
     const loadAccountsEffect = rxMethod<string>(
       pipe(

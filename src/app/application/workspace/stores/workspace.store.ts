@@ -18,7 +18,7 @@ import { pipe, switchMap, tap, catchError, of } from 'rxjs';
 import { tapResponse } from '@ngrx/operators';
 import { initialWorkspaceState } from './workspace.state';
 import { Workspace } from '@domain/workspace';
-import { WorkspaceService } from '@infrastructure/workspace/services/workspace.service';
+import { WORKSPACE_REPOSITORY } from '@application/tokens';
 import { OrganizationStore } from '@application/organization/stores/organization.store';
 import { AuthStore } from '@application/auth/stores/auth.store';
 
@@ -52,7 +52,7 @@ export const WorkspaceStore = signalStore(
       return current ? favorites.includes(current.id) : false;
     }),
   })),
-  withMethods((store, workspaceService = inject(WorkspaceService)) => {
+  withMethods((store, workspaceService = inject(WORKSPACE_REPOSITORY)) => {
     // Load workspaces for organization
     const loadOrganizationWorkspacesEffect = rxMethod<string>(
       pipe(
