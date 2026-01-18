@@ -146,8 +146,8 @@ export class WorkspaceFacade {
     // My workspaces (all available workspaces for this user)
     const myWorkspaces = searchQuery ? filteredWorkspaces : sortedByRecency;
     
-    // Favorite workspaces (filtered by isFavorite flag)
-    const favoriteWorkspaces = filteredWorkspaces.filter(w => w.isFavorite);
+    // Favorite workspaces (use store's favoriteWorkspacesList)
+    const favoriteWorkspaces = this.workspaceStore.favoriteWorkspacesList();
     
     return {
       currentWorkspaceId,
@@ -228,7 +228,10 @@ export class WorkspaceFacade {
     
     // Icon mapping based on workspace status or type
     if (workspace.status === 'archived') return 'archive';
-    if (workspace.isFavorite) return 'star';
+    
+    // Check if workspace is favorited (using store's favoriteWorkspaces array)
+    const favoriteIds = this.workspaceStore.favoriteWorkspaces();
+    if (favoriteIds.includes(workspace.id)) return 'star';
     
     return 'workspace';
   }
