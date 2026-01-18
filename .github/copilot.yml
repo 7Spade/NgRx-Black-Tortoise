@@ -1,0 +1,124 @@
+# GitHub Copilot Configuration
+# This file configures GitHub Copilot's behavior for this repository
+# Reference: https://docs.github.com/en/copilot/customizing-copilot
+
+# Indexing Configuration
+indexing:
+  # Include documentation and configuration files in Copilot's context
+  include:
+    - "**/*.md"
+    - "**/*.json"
+    - "**/*.yml"
+    - "**/*.yaml"
+    - "**/*.ts"
+    - "**/*.html"
+    - "**/*.scss"
+    - "**/*.css"
+    - ".github/**/*"
+    - "docs/**/*"
+  
+  # Exclude generated files and dependencies
+  exclude:
+    - "node_modules/**"
+    - "dist/**"
+    - ".angular/**"
+    - "**/*.min.js"
+    - "**/*.bundle.js"
+    - "package-lock.json"
+    - "src/dataconnect-generated/**"
+
+# Knowledge Base Priority
+# Files that Copilot should prioritize when providing context
+priority_files:
+  - ".github/copilot-instructions.md"
+  - "AGENTS.md"
+  - "README.md"
+  - ".github/project-layer-mapping.yml"
+  - ".github/forbidden-copilot-instructions.md"
+  - "docs/architecture/**/*.md"
+  - "docs/DDD/**/*.md"
+
+# Skill Discovery
+# Copilot will automatically discover skills in these directories
+skills:
+  directories:
+    - ".github/skills"
+    - ".claude/skills"  # Legacy support
+
+# Custom Instructions Hierarchy
+# Order matters - later files can override earlier ones
+instructions:
+  hierarchy:
+    - ".github/copilot-instructions.md"  # Main instructions
+    - ".github/instructions/**/*.instructions.md"  # Specific patterns
+    - ".github/forbidden-copilot-instructions.md"  # Restrictions
+
+# Prompt Templates
+prompts:
+  directory: ".github/prompts"
+
+# Language-specific settings
+languages:
+  typescript:
+    # Enforce strict typing
+    strict: true
+    # Use Angular-specific patterns
+    framework: "angular"
+    version: "20"
+  
+  html:
+    # Use Angular template syntax
+    syntax: "angular"
+    # Prefer new control flow
+    control_flow: "@if/@for/@switch"
+
+# Code Review Configuration
+code_review:
+  # Enable automatic code review suggestions
+  enabled: true
+  # Focus areas for review
+  focus:
+    - "architecture"
+    - "security"
+    - "performance"
+    - "accessibility"
+    - "testing"
+
+# Chat Configuration
+chat:
+  # Default chat mode behavior
+  default_context:
+    - "project_structure"
+    - "architecture_rules"
+    - "coding_standards"
+  
+  # Maximum context window
+  max_context_files: 20
+  
+  # Enable semantic search
+  semantic_search: true
+
+# Workspace Rules
+workspace:
+  # Enforce DDD architecture
+  architecture: "ddd"
+  
+  # State management approach
+  state_management: "@ngrx/signals"
+  
+  # Forbidden patterns
+  forbidden:
+    - "traditional_ngrx"  # No @ngrx/store, @ngrx/effects
+    - "zone_js"  # Zone-less only
+    - "legacy_control_flow"  # No *ngIf, *ngFor, *ngSwitch
+
+# Performance Optimization
+performance:
+  # Lazy load large documentation
+  lazy_load: true
+  
+  # Cache frequently accessed files
+  cache_enabled: true
+  
+  # Limit concurrent context files
+  max_concurrent_files: 10
