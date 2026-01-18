@@ -1,4 +1,4 @@
-# Copilot Instructions – Complete Self-Contained Edition
+# Copilot Instructions – Complete Self-Contained Edition (Enhanced)
 
 ---
 
@@ -40,7 +40,6 @@ All rules, forbidden constructs, and enforcement are fully declared in this file
 ---
 
 ## 3. Signals & State Rules
-
 - Use `signal()` for private, local state only.
 - Use `computed()` for derived state.
 - Use `effect()` for side effects; never change state inside effects.
@@ -50,7 +49,6 @@ All rules, forbidden constructs, and enforcement are fully declared in this file
 ---
 
 ## 4. Sequential Planning (MCP)
-
 - For every non-trivial task:
   1. List all **assumptions** (domain, inputs, context)
   2. Decompose requirements into **atomic, sequential, actionable tasks**
@@ -61,7 +59,6 @@ All rules, forbidden constructs, and enforcement are fully declared in this file
 ---
 
 ## 5. Forbidden Constructs
-
 - Any direct RxJS usage for state management
 - Any traditional NgRx (actions / reducers / effects)
 - Any direct persistence in domain layer
@@ -74,7 +71,6 @@ All rules, forbidden constructs, and enforcement are fully declared in this file
 ---
 
 ## 6. Passive Enforcement – TypeScript as Law
-
 - **TS2339** on domain fields → architectural violation
 - **TS2345** type mismatch → architectural violation
 - **TS7053** invalid index → architectural violation
@@ -86,7 +82,6 @@ All rules, forbidden constructs, and enforcement are fully declared in this file
 ---
 
 ## 7. CI Enforcement
-
 - All code must pass: `pnpm build --strict`
 - No TS errors allowed
 - No unused imports or variables
@@ -96,21 +91,26 @@ All rules, forbidden constructs, and enforcement are fully declared in this file
 ---
 
 ## 8. Identity / Workspace Switcher Enforcement
-
-- **Exactly one Identity Switcher** and **one Workspace Switcher**
-- Only one active identity signal and workspace signal per application
-- Any other components must delegate to the canonical store
-- Duplicate switchers must be removed or refactored
-- All interactions must be **signal-driven, state-backed, observable**
+- **Exactly one Identity Switcher** and **one Workspace Switcher**.
+- Only one active identity signal and workspace signal per application.
+- Any other components must delegate to the canonical store.
+- Duplicate switchers must be removed or refactored.
+- All interactions must be **signal-driven, state-backed, observable**.
 - Forbidden:
   - Local-only state for switchers
   - Parallel switcher state
   - UI-only fixes
 
+**Enhanced Passive Rule**:
+- Before any implementation, Copilot **must check the entire project** for:
+  - All switcher components
+  - All store signals related to Identity / Workspace
+- If multiple active signals or conflicting implementations exist → **STOP and output TODO skeleton for consolidation**.
+- Copilot must never bypass canonical ownership.
+
 ---
 
 ## 9. Output Format Enforcement
-
 When generating code:
 
 1. **Assumptions** – explicitly list all assumptions
@@ -122,7 +122,6 @@ When generating code:
 ---
 
 ## 10. Summary of Non-Negotiables
-
 - Angular Signals + NgRx Signals only
 - Domain entities are minimal, cannot be extended for UI
 - Single store per domain, API finality enforced
@@ -130,5 +129,6 @@ When generating code:
 - No external documents required
 - Copilot must follow skeleton → plan → implement sequence
 - Any attempt to bypass rules is forbidden
+- **All switcher ownership must be consolidated and checked globally before any code change.**
 
 > **This file is self-contained law. Obey it. All violations are actively blocked by TypeScript + CI.**
