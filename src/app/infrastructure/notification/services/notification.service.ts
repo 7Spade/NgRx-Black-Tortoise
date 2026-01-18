@@ -24,16 +24,27 @@ import { Notification, NotificationType, NotificationPriority } from '@domain/no
 
 interface NotificationFirestoreData {
   id: string;
-  userId: string;
+  recipientId: string;
+  workspaceId?: string;
+  resourceType?: string;
+  resourceId?: string;
   type: NotificationType;
   priority: NotificationPriority;
   title: string;
   message: string;
-  read: boolean;
+  icon?: string;
+  avatarUrl?: string;
+  actionLabel?: string;
   actionUrl?: string;
+  read: boolean;
+  readAt?: Timestamp | Date | null;
+  archived: boolean;
+  archivedAt?: Timestamp | Date | null;
+  createdAt: Timestamp | Date | null;
+  expiresAt?: Timestamp | Date | null;
+  senderId?: string;
+  senderName?: string;
   metadata?: Record<string, unknown>;
-  createdAt: Timestamp | Date;
-  readAt?: Timestamp | Date;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -50,7 +61,7 @@ export class NotificationFirestoreService implements NotificationRepository {
 
   getNotificationsByUser(userId: string, limitCount?: number): Observable<Notification[]> {
     const constraints: QueryConstraint[] = [
-      where('userId', '==', userId),
+      where('recipientId', '==', userId),
       orderBy('createdAt', 'desc'),
     ];
 
@@ -67,7 +78,7 @@ export class NotificationFirestoreService implements NotificationRepository {
 
   getUnreadNotifications(userId: string): Observable<Notification[]> {
     const constraints: QueryConstraint[] = [
-      where('userId', '==', userId),
+      where('recipientId', '==', userId),
       where('read', '==', false),
       orderBy('createdAt', 'desc'),
     ];
@@ -81,7 +92,7 @@ export class NotificationFirestoreService implements NotificationRepository {
 
   getNotificationsByType(userId: string, type: NotificationType): Observable<Notification[]> {
     const constraints: QueryConstraint[] = [
-      where('userId', '==', userId),
+      where('recipientId', '==', userId),
       where('type', '==', type),
       orderBy('createdAt', 'desc'),
     ];
@@ -94,21 +105,32 @@ export class NotificationFirestoreService implements NotificationRepository {
   }
 
   createNotification(
-    notification: Omit<Notification, 'id' | 'createdAt' | 'read' | 'readAt'>
+    notification: Omit<Notification, 'id' | 'createdAt' | 'read' | 'readAt' | 'archived' | 'archivedAt'>
   ): Observable<Notification> {
     const newDocRef = doc(this.notificationsCollection);
-    const notificationData: Partial<NotificationFirestoreData> = {
+    const notificationData: any = {
       id: newDocRef.id,
-      userId: notification.userId,
+      recipientId: notification.recipientId,
       type: notification.type,
       priority: notification.priority,
       title: notification.title,
       message: notification.message,
       read: false,
-      createdAt: serverTimestamp(),
+      archived: false,
+      createdAt: serverTimestamp() as any,
     };
 
+    // Optional fields
+    if (notification.workspaceId) notificationData.workspaceId = notification.workspaceId;
+    if (notification.resourceType) notificationData.resourceType = notification.resourceType;
+    if (notification.resourceId) notificationData.resourceId = notification.resourceId;
+    if (notification.icon) notificationData.icon = notification.icon;
+    if (notification.avatarUrl) notificationData.avatarUrl = notification.avatarUrl;
+    if (notification.actionLabel) notificationData.actionLabel = notification.actionLabel;
     if (notification.actionUrl) notificationData.actionUrl = notification.actionUrl;
+    if (notification.expiresAt) notificationData.expiresAt = notification.expiresAt;
+    if (notification.senderId) notificationData.senderId = notification.senderId;
+    if (notification.senderName) notificationData.senderName = notification.senderName;
     if (notification.metadata) notificationData.metadata = notification.metadata;
 
     return from(setDoc(newDocRef, notificationData)).pipe(
@@ -116,6 +138,7 @@ export class NotificationFirestoreService implements NotificationRepository {
         ...notification,
         id: newDocRef.id,
         read: false,
+        archived: false,
         createdAt: new Date(),
       }))
     );
@@ -123,9 +146,9 @@ export class NotificationFirestoreService implements NotificationRepository {
 
   markAsRead(id: string): Observable<void> {
     const notificationDoc = doc(this.notificationsCollection, id);
-    const updateData: Partial<NotificationFirestoreData> = {
+    const updateData: any = {
       read: true,
-      readAt: serverTimestamp(),
+      readAt: serverTimestamp() as any,
     };
 
     return from(updateDoc(notificationDoc, updateData));
@@ -134,7 +157,7 @@ export class NotificationFirestoreService implements NotificationRepository {
   markAllAsRead(userId: string): Observable<void> {
     // Get all unread notifications
     const constraints: QueryConstraint[] = [
-      where('userId', '==', userId),
+      where('recipientId', '==', userId),
       where('read', '==', false),
     ];
     const q = query(this.notificationsCollection, ...constraints);
@@ -143,9 +166,9 @@ export class NotificationFirestoreService implements NotificationRepository {
       collectionData(q, { idField: 'id' }).pipe(
         map(async (docs) => {
           const batch = writeBatch(this.firestore);
-          const updateData: Partial<NotificationFirestoreData> = {
+          const updateData: any = {
             read: true,
-            readAt: serverTimestamp(),
+            readAt: serverTimestamp() as any,
           };
 
           docs.forEach((docData) => {
@@ -191,21 +214,40 @@ export class NotificationFirestoreService implements NotificationRepository {
   private convertFirestoreDoc(data: NotificationFirestoreData): Notification {
     const notification: Notification = {
       id: data.id,
-      userId: data.userId,
+      recipientId: data.recipientId,
       type: data.type,
       priority: data.priority,
       title: data.title,
       message: data.message,
       read: data.read,
+      archived: data.archived,
       createdAt:
-        data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt),
+        data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt!),
     };
 
+    // Optional fields
+    if (data.workspaceId) notification.workspaceId = data.workspaceId;
+    if (data.resourceType) notification.resourceType = data.resourceType;
+    if (data.resourceId) notification.resourceId = data.resourceId;
+    if (data.icon) notification.icon = data.icon;
+    if (data.avatarUrl) notification.avatarUrl = data.avatarUrl;
+    if (data.actionLabel) notification.actionLabel = data.actionLabel;
     if (data.actionUrl) notification.actionUrl = data.actionUrl;
+    if (data.senderId) notification.senderId = data.senderId;
+    if (data.senderName) notification.senderName = data.senderName;
     if (data.metadata) notification.metadata = data.metadata;
+    
     if (data.readAt) {
       notification.readAt =
         data.readAt instanceof Timestamp ? data.readAt.toDate() : new Date(data.readAt);
+    }
+    if (data.archivedAt) {
+      notification.archivedAt =
+        data.archivedAt instanceof Timestamp ? data.archivedAt.toDate() : new Date(data.archivedAt);
+    }
+    if (data.expiresAt) {
+      notification.expiresAt =
+        data.expiresAt instanceof Timestamp ? data.expiresAt.toDate() : new Date(data.expiresAt);
     }
 
     return notification;

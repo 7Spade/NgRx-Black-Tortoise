@@ -57,40 +57,40 @@ export const MemberStore = signalStore(
      * Get active members only
      */
     activeMembers: computed(() => 
-      members().filter(m => m.status === 'active')
+      members().filter(m => m.status === MemberStatus.ACTIVE)
     ),
     
     /**
      * Get pending members (invited but not joined)
      */
     pendingMembers: computed(() => 
-      members().filter(m => m.status === 'pending')
+      members().filter(m => m.status === MemberStatus.PENDING)
     ),
     
     /**
      * Get suspended members
      */
     suspendedMembers: computed(() => 
-      members().filter(m => m.status === 'suspended')
+      members().filter(m => m.status === MemberStatus.SUSPENDED)
     ),
     
     /**
      * Get members by role
      */
     ownerMembers: computed(() => 
-      members().filter(m => m.role === 'owner')
+      members().filter(m => m.role === MemberRole.OWNER)
     ),
     
     adminMembers: computed(() => 
-      members().filter(m => m.role === 'admin')
+      members().filter(m => m.role === MemberRole.ADMIN)
     ),
     
-    editorMembers: computed(() => 
-      members().filter(m => m.role === 'editor')
+    memberMembers: computed(() => 
+      members().filter(m => m.role === MemberRole.MEMBER)
     ),
     
-    viewerMembers: computed(() => 
-      members().filter(m => m.role === 'viewer')
+    guestMembers: computed(() => 
+      members().filter(m => m.role === MemberRole.GUEST)
     ),
     
     /**
@@ -98,14 +98,12 @@ export const MemberStore = signalStore(
      */
     memberCount: computed(() => members().length),
     
-    activeMemberCount: computed(() => 
-      members().filter(m => m.status === 'active').length
-    ),
-    
     /**
-     * Check if members are loaded
+     * Get active member count
      */
-    hasMembers: computed(() => members().length > 0)
+    activeMemberCount: computed(() => 
+      members().filter(m => m.status === MemberStatus.ACTIVE).length
+    )
   })),
   
   withMethods((store, memberRepository = inject(MEMBER_REPOSITORY)) => ({
@@ -127,34 +125,14 @@ export const MemberStore = signalStore(
     ),
     
     /**
-     * Load active members only
-     */
-    loadActiveMembers: rxMethod<string>(
-      pipe(
-        tap(() => patchState(store, { loading: true, error: null })),
-        switchMap((workspaceId) => memberRepository.getActiveMembers(workspaceId)),
-        tapResponse({
-          next: (members) => patchState(store, { members, loading: false }),
-          error: (error: Error) => patchState(store, { 
-            error: error.message, 
-            loading: false 
-          })
-        })
-      )
-    ),
-    
-    /**
      * Add a member to workspace
      */
-    addMember: rxMethod<Omit<Member, 'id' | 'joinedAt' | 'updatedAt'>>(
+    addMember: rxMethod<Omit<Member, 'id'>>(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
         switchMap((memberData) => memberRepository.addMember(memberData)),
         tapResponse({
-          next: (member) => patchState(store, (state) => ({
-            members: [...state.members, member],
-            loading: false
-          })),
+          next: () => patchState(store, { loading: false }),
           error: (error: Error) => patchState(store, { 
             error: error.message, 
             loading: false 
@@ -168,20 +146,20 @@ export const MemberStore = signalStore(
      */
     updateMemberRole: rxMethod<{ memberId: string; role: MemberRole }>(
       pipe(
-        tap(() => patchState(store, { loading: true, error: null })),
         switchMap(({ memberId, role }) => 
-          memberRepository.updateMemberRole(memberId, role)
+          memberRepository.updateMemberRole(memberId, role).pipe(
+            tap(() => {
+              // Update local state optimistically
+              patchState(store, (state) => ({
+                members: state.members.map(m => 
+                  m.id === memberId ? { ...m, role } : m
+                )
+              }));
+            })
+          )
         ),
         tapResponse({
-          next: () => {
-            // Update local state optimistically
-            patchState(store, (state) => ({
-              members: state.members.map(m => 
-                m.id === memberId ? { ...m, role } : m
-              ),
-              loading: false
-            }));
-          },
+          next: () => patchState(store, { loading: false }),
           error: (error: Error) => patchState(store, { 
             error: error.message, 
             loading: false 
@@ -195,20 +173,20 @@ export const MemberStore = signalStore(
      */
     updateMemberStatus: rxMethod<{ memberId: string; status: MemberStatus }>(
       pipe(
-        tap(() => patchState(store, { loading: true, error: null })),
         switchMap(({ memberId, status }) => 
-          memberRepository.updateMemberStatus(memberId, status)
+          memberRepository.updateMemberStatus(memberId, status).pipe(
+            tap(() => {
+              // Update local state optimistically
+              patchState(store, (state) => ({
+                members: state.members.map(m => 
+                  m.id === memberId ? { ...m, status } : m
+                )
+              }));
+            })
+          )
         ),
         tapResponse({
-          next: () => {
-            // Update local state optimistically
-            patchState(store, (state) => ({
-              members: state.members.map(m => 
-                m.id === memberId ? { ...m, status } : m
-              ),
-              loading: false
-            }));
-          },
+          next: () => patchState(store, { loading: false }),
           error: (error: Error) => patchState(store, { 
             error: error.message, 
             loading: false 
@@ -218,20 +196,22 @@ export const MemberStore = signalStore(
     ),
     
     /**
-     * Remove a member
+     * Remove a member from workspace
      */
     removeMember: rxMethod<string>(
       pipe(
-        tap(() => patchState(store, { loading: true, error: null })),
-        switchMap((memberId) => memberRepository.removeMember(memberId)),
+        switchMap((memberId) => 
+          memberRepository.removeMember(memberId).pipe(
+            tap(() => {
+              // Remove from local state
+              patchState(store, (state) => ({
+                members: state.members.filter(m => m.id !== memberId)
+              }));
+            })
+          )
+        ),
         tapResponse({
-          next: () => {
-            // Remove from local state
-            patchState(store, (state) => ({
-              members: state.members.filter(m => m.id !== memberId),
-              loading: false
-            }));
-          },
+          next: () => patchState(store, { loading: false }),
           error: (error: Error) => patchState(store, { 
             error: error.message, 
             loading: false 
@@ -241,11 +221,17 @@ export const MemberStore = signalStore(
     ),
     
     /**
-     * Clear all members
+     * Update member's last active time
      */
-    clearMembers() {
-      patchState(store, initialState);
-    }
+    updateLastActive: rxMethod<string>(
+      pipe(
+        switchMap((memberId) => memberRepository.updateLastActive(memberId)),
+        tapResponse({
+          next: () => {},
+          error: (error: Error) => console.error('Failed to update last active:', error)
+        })
+      )
+    )
   })),
   
   withHooks({

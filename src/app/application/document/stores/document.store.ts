@@ -61,20 +61,16 @@ export const DocumentStore = signalStore(
     /**
      * Get documents by type
      */
-    noteDocuments: computed(() => 
-      documents().filter(d => d.type === 'note')
-    ),
-    
-    spreadsheetDocuments: computed(() => 
-      documents().filter(d => d.type === 'spreadsheet')
-    ),
-    
-    presentationDocuments: computed(() => 
-      documents().filter(d => d.type === 'presentation')
-    ),
-    
     folderDocuments: computed(() => 
-      documents().filter(d => d.type === 'folder')
+      documents().filter(d => d.type === DocumentType.FOLDER)
+    ),
+    
+    fileDocuments: computed(() => 
+      documents().filter(d => d.type === DocumentType.FILE)
+    ),
+    
+    linkDocuments: computed(() => 
+      documents().filter(d => d.type === DocumentType.LINK)
     ),
     
     /**
@@ -115,32 +111,13 @@ export const DocumentStore = signalStore(
     ),
     
     /**
-     * Load documents by type
-     */
-    loadDocumentsByType: rxMethod<{ workspaceId: string; type: DocumentType }>(
-      pipe(
-        tap(() => patchState(store, { loading: true, error: null })),
-        switchMap(({ workspaceId, type }) => 
-          documentRepository.getDocumentsByType(workspaceId, type)
-        ),
-        tapResponse({
-          next: (documents) => patchState(store, { documents, loading: false }),
-          error: (error: Error) => patchState(store, { 
-            error: error.message, 
-            loading: false 
-          })
-        })
-      )
-    ),
-    
-    /**
      * Load recent documents
      */
-    loadRecentDocuments: rxMethod<{ workspaceId: string; limit?: number }>(
+    loadRecentDocuments: rxMethod<{ workspaceId: string; userId: string; limit?: number }>(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
-        switchMap(({ workspaceId, limit = 10 }) => 
-          documentRepository.getRecentDocuments(workspaceId, limit)
+        switchMap(({ workspaceId, userId, limit }) => 
+          documentRepository.getRecentDocuments(workspaceId, userId, limit)
         ),
         tapResponse({
           next: (documents) => patchState(store, { 
@@ -156,43 +133,14 @@ export const DocumentStore = signalStore(
     ),
     
     /**
-     * Load starred documents for current user
-     */
-    loadStarredDocuments: rxMethod<string>(
-      pipe(
-        tap(() => patchState(store, { loading: true, error: null })),
-        switchMap((workspaceId) => {
-          const user = authStore.user();
-          if (!user) {
-            throw new Error('User not authenticated');
-          }
-          return documentRepository.getStarredDocuments(workspaceId, user.uid);
-        }),
-        tapResponse({
-          next: (documents) => patchState(store, { 
-            starredDocuments: documents, 
-            loading: false 
-          }),
-          error: (error: Error) => patchState(store, { 
-            error: error.message, 
-            loading: false 
-          })
-        })
-      )
-    ),
-    
-    /**
      * Create a new document
      */
-    createDocument: rxMethod<Omit<Document, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>>(
+    createDocument: rxMethod<Omit<Document, 'id'>>(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
         switchMap((documentData) => documentRepository.createDocument(documentData)),
         tapResponse({
-          next: (document) => patchState(store, (state) => ({
-            documents: [...state.documents, document],
-            loading: false
-          })),
+          next: () => patchState(store, { loading: false }),
           error: (error: Error) => patchState(store, { 
             error: error.message, 
             loading: false 
@@ -206,20 +154,20 @@ export const DocumentStore = signalStore(
      */
     updateDocument: rxMethod<{ documentId: string; data: Partial<Document> }>(
       pipe(
-        tap(() => patchState(store, { loading: true, error: null })),
         switchMap(({ documentId, data }) => 
-          documentRepository.updateDocument(documentId, data)
+          documentRepository.updateDocument(documentId, data).pipe(
+            tap(() => {
+              // Update local state optimistically
+              patchState(store, (state) => ({
+                documents: state.documents.map(d => 
+                  d.id === documentId ? { ...d, ...data } : d
+                )
+              }));
+            })
+          )
         ),
         tapResponse({
-          next: () => {
-            // Update local state optimistically
-            patchState(store, (state) => ({
-              documents: state.documents.map(d => 
-                d.id === documentId ? { ...d, ...data } : d
-              ),
-              loading: false
-            }));
-          },
+          next: () => patchState(store, { loading: false }),
           error: (error: Error) => patchState(store, { 
             error: error.message, 
             loading: false 
@@ -231,60 +179,22 @@ export const DocumentStore = signalStore(
     /**
      * Delete a document (soft delete)
      */
-    deleteDocument: rxMethod<string>(
+    deleteDocument: rxMethod<{ documentId: string; deletedBy: string }>(
       pipe(
-        tap(() => patchState(store, { loading: true, error: null })),
-        switchMap((documentId) => documentRepository.deleteDocument(documentId)),
-        tapResponse({
-          next: () => {
-            // Remove from local state
-            patchState(store, (state) => ({
-              documents: state.documents.filter(d => d.id !== documentId),
-              recentDocuments: state.recentDocuments.filter(d => d.id !== documentId),
-              starredDocuments: state.starredDocuments.filter(d => d.id !== documentId),
-              loading: false
-            }));
-          },
-          error: (error: Error) => patchState(store, { 
-            error: error.message, 
-            loading: false 
-          })
-        })
-      )
-    ),
-    
-    /**
-     * Toggle document star
-     */
-    toggleDocumentStar: rxMethod<{ documentId: string; starred: boolean }>(
-      pipe(
-        tap(() => patchState(store, { loading: true, error: null })),
-        switchMap(({ documentId, starred }) => {
-          const user = authStore.user();
-          if (!user) {
-            throw new Error('User not authenticated');
-          }
-          return documentRepository.toggleDocumentStar(documentId, user.uid, starred);
-        }),
-        tapResponse({
-          next: () => {
-            // Update local state
-            const user = authStore.user();
-            if (user) {
+        switchMap(({ documentId, deletedBy }) => 
+          documentRepository.deleteDocument(documentId, deletedBy).pipe(
+            tap(() => {
+              // Remove from local state
               patchState(store, (state) => ({
-                documents: state.documents.map(d => {
-                  if (d.id === documentId) {
-                    const starredBy = starred
-                      ? [...d.starredBy, user.uid]
-                      : d.starredBy.filter(id => id !== user.uid);
-                    return { ...d, starredBy };
-                  }
-                  return d;
-                }),
-                loading: false
+                documents: state.documents.filter(d => d.id !== documentId),
+                recentDocuments: state.recentDocuments.filter(d => d.id !== documentId),
+                starredDocuments: state.starredDocuments.filter(d => d.id !== documentId)
               }));
-            }
-          },
+            })
+          )
+        ),
+        tapResponse({
+          next: () => patchState(store, { loading: false }),
           error: (error: Error) => patchState(store, { 
             error: error.message, 
             loading: false 
@@ -302,15 +212,19 @@ export const DocumentStore = signalStore(
   })),
   
   withHooks({
-    onInit(store, workspaceStore = inject(WorkspaceStore)) {
+    onInit(store, workspaceStore = inject(WorkspaceStore), authStore = inject(AuthStore)) {
       // Auto-load documents when workspace changes
       effect(() => {
         const currentWorkspace = workspaceStore.currentWorkspace();
+        const user = authStore.user();
         
-        if (currentWorkspace) {
+        if (currentWorkspace && user?.id) {
           store.loadWorkspaceDocuments(currentWorkspace.id);
-          store.loadRecentDocuments({ workspaceId: currentWorkspace.id, limit: 10 });
-          store.loadStarredDocuments(currentWorkspace.id);
+          store.loadRecentDocuments({ 
+            workspaceId: currentWorkspace.id, 
+            userId: user.id,
+            limit: 10 
+          });
         } else {
           patchState(store, initialState);
         }
