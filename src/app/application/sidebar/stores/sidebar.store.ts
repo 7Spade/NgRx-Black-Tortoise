@@ -50,14 +50,24 @@ export const SidebarStore = signalStore(
   
   withComputed(({ isCollapsed, isPinned, width }) => ({
     /**
+     * Collapsed state (alias for isCollapsed for component compatibility)
+     */
+    collapsed: computed(() => isCollapsed()),
+    
+    /**
+     * Pinned state (alias for isPinned for component compatibility)
+     */
+    pinned: computed(() => isPinned()),
+    
+    /**
      * Sidebar is visible (expanded or pinned)
      */
-    isVisible: computed(() => !isCollapsed || isPinned),
+    isVisible: computed(() => !isCollapsed() || isPinned()),
     
     /**
      * Sidebar can be resized (not collapsed and pinned)
      */
-    isResizable: computed(() => !isCollapsed && isPinned),
+    isResizable: computed(() => !isCollapsed() && isPinned()),
     
     /**
      * Current effective width

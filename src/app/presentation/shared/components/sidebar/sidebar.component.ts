@@ -60,9 +60,11 @@ export class SidebarComponent {
     return null;
   });
 
-  // Responsive
+  // Responsive - auto-collapse on mobile/tablet
   private isHandsetOrTablet = toSignal(
-    this.breakpointObserver.observe([BREAKPOINTS.HANDSET, BREAKPOINTS.TABLET])
+    this.breakpointObserver.observe([
+      `(max-width: ${BREAKPOINTS.TABLET_MAX}px)`
+    ])
       .pipe(map(result => result.matches)),
     { initialValue: false }
   );
@@ -88,8 +90,15 @@ export class SidebarComponent {
     const modules = [...this.modules()];
     moveItemInArray(modules, event.previousIndex, event.currentIndex);
     
-    // Update module order
-    this.moduleStore.reorderModules(modules.map(m => m.id));
+    // Update module order with new positions
+    const orders = modules.map((m, index) => ({ id: m.id, order: index }));
+    
+    // Get current workspace ID (TODO: get from WorkspaceStore)
+    const workspaceId = modules[0]?.workspaceId || '';
+    
+    if (workspaceId) {
+      this.moduleStore.updateModuleOrder({ workspaceId, orders });
+    }
   }
 
   /**
