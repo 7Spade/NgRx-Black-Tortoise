@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, input, output, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatBadgeModule } from '@angular/material/badge';
@@ -159,7 +159,10 @@ export class ModuleItemComponent {
   // Inputs
   module = input.required<Module>();
   collapsed = input<boolean>(false);
-  isActive = input<boolean>(false);
+  active = input<boolean>(false);
+
+  // Computed
+  isActive = computed(() => this.active());
 
   // Outputs
   moduleClick = output<Module>();

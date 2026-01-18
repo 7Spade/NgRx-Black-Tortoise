@@ -63,7 +63,7 @@ export class NotificationBellComponent {
   markAllAsRead(): void {
     const user = this.authStore.user();
     if (user) {
-      this.notificationStore.markAllAsRead(user.uid);
+      this.notificationStore.markAllAsRead(user.id);
     }
   }
 

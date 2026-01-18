@@ -216,9 +216,9 @@ export class NotificationFirestoreService implements NotificationRepository {
       collectionData(q, { idField: 'id' })
     ).pipe(
       switchMap(docs => {
-        const deletes = docs.map(doc => {
-          const notificationDoc = doc(this.firestore, `notifications/${doc['id']}`);
-          return deleteDoc(notificationDoc);
+        const deletes = docs.map(notification => {
+          const notificationDocRef = doc(this.firestore, `notifications/${notification['id']}`);
+          return deleteDoc(notificationDocRef);
         });
         return Promise.all(deletes);
       }),
@@ -269,23 +269,24 @@ export class NotificationFirestoreService implements NotificationRepository {
    */
   createDefaultNotificationSettings(userId: string): Observable<NotificationSettings> {
     const defaultSettings: NotificationSettings = {
-      id: userId,
-      userId,
-      emailEnabled: true,
-      pushEnabled: true,
-      inAppEnabled: true,
-      enabledTypes: Object.values(NotificationType).reduce((acc, type) => {
-        acc[type] = true;
+      accountId: userId,
+      emailNotifications: true,
+      pushNotifications: true,
+      inAppNotifications: true,
+      preferences: Object.values(NotificationType).reduce((acc, type) => {
+        acc[type] = {
+          enabled: true,
+          email: true,
+          push: true,
+          inApp: true
+        };
         return acc;
-      }, {} as Record<NotificationType, boolean>),
-      mutedWorkspaces: [],
-      quietHours: {
-        enabled: false,
-        start: '22:00',
-        end: '08:00',
-        timezone: 'UTC'
-      },
-      updatedAt: new Date()
+      }, {} as NotificationSettings['preferences']),
+      doNotDisturb: false,
+      doNotDisturbStart: '22:00',
+      doNotDisturbEnd: '08:00',
+      dailyDigest: false,
+      weeklyDigest: false
     };
 
     const settingsDoc = doc(this.firestore, `notification-settings/${userId}`);
