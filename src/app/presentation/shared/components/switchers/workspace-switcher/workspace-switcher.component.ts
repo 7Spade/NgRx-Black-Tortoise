@@ -164,10 +164,10 @@ export class WorkspaceSwitcherComponent implements OnInit {
   /**
    * Select workspace with visual feedback
    * 
-   * This method:
-   * 1. Updates WorkspaceStore.currentWorkspace signal
-   * 2. Triggers ModuleStore.loadWorkspaceModules() for module availability
-   * 3. Updates ContextStore with workspace information
+   * Canonical flow: ContextStore owns workspace selection
+   * 1. Updates ContextStore.currentWorkspaceId (single source of truth)
+   * 2. WorkspaceStore reacts via effect and loads full workspace details
+   * 3. ModuleStore reacts via WorkspaceStore.currentWorkspace() and loads modules
    * 4. Provides visual feedback via MatSnackBar
    */
   selectWorkspace(workspace: Workspace): void {
@@ -179,9 +179,9 @@ export class WorkspaceSwitcherComponent implements OnInit {
       return;
     }
     
-    // Update workspace in WorkspaceStore
-    // This will automatically propagate to ModuleStore and ContextStore
-    this.workspaceStore.setCurrentWorkspace(workspace);
+    // Update workspace in ContextStore (canonical owner)
+    // This will automatically propagate to WorkspaceStore and ModuleStore via reactive effects
+    this.contextStore.switchWorkspace(workspace.id);
     
     // Visual feedback
     const workspaceName = workspace.displayName || workspace.name;
