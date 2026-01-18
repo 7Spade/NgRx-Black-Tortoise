@@ -1,0 +1,43 @@
+<button
+  mat-icon-button
+  [matMenuTriggerFor]="accountMenu"
+  class="account-trigger"
+  aria-label="Account menu"
+>
+  @if (avatarUrl(); as url) {
+    <img [src]="url" [alt]="displayName()" class="avatar" />
+  } @else {
+    <div class="avatar-placeholder">{{ initials() }}</div>
+  }
+</button>
+
+<mat-menu #accountMenu="matMenu" class="account-menu">
+  <!-- Account switcher -->
+  <div class="menu-section">
+    <app-account-switcher />
+  </div>
+
+  <mat-divider />
+
+  <!-- User actions -->
+  <div class="menu-section">
+    <button mat-menu-item (click)="goToProfile()">
+      <mat-icon>person</mat-icon>
+      <span>Profile</span>
+    </button>
+    <button mat-menu-item (click)="goToSettings()">
+      <mat-icon>settings</mat-icon>
+      <span>Settings</span>
+    </button>
+  </div>
+
+  <mat-divider />
+
+  <!-- Sign out -->
+  <div class="menu-section">
+    <button mat-menu-item (click)="signOut()">
+      <mat-icon>logout</mat-icon>
+      <span>Sign out</span>
+    </button>
+  </div>
+</mat-menu>
