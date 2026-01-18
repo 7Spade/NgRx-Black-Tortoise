@@ -9,8 +9,10 @@ import { BreakpointObserver } from '@angular/cdk/layout';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { AuthStore } from '@application/auth/stores/auth.store';
+import { AccountStore } from '@application/account/stores/account.store';
 import { ContextStore } from '@application/context/stores/context.store';
 import { BREAKPOINTS } from '@shared/constants/breakpoints';
+import { Account } from '@domain/account';
 
 type AccountType = 'user' | 'organization' | 'bot' | 'team' | 'partner';
 
@@ -48,6 +50,7 @@ type AccountType = 'user' | 'organization' | 'bot' | 'team' | 'partner';
 export class AccountSwitcherComponent implements OnInit {
   // Stores
   protected authStore = inject(AuthStore);
+  protected accountStore = inject(AccountStore);
   protected contextStore = inject(ContextStore);
   private breakpointObserver = inject(BreakpointObserver);
   private destroyRef = inject(DestroyRef);
@@ -62,23 +65,26 @@ export class AccountSwitcherComponent implements OnInit {
   // Screen reader announcement
   protected announceMessage = signal('');
   
-  // Computed values
+  // Computed values - use AccountStore for account data
   protected displayName = computed(() => {
-    const user = this.authStore.user();
-    if (!user) return 'Not logged in';
+    const currentAccount = this.accountStore.currentAccount();
+    if (!currentAccount) {
+      const user = this.authStore.user();
+      return user?.displayName || user?.email || 'Not logged in';
+    }
     
-    return user.displayName || user.email || 'User';
+    return currentAccount.displayName || currentAccount.email || 'User';
   });
   
   protected avatarUrl = computed(() => {
-    // AuthUser doesn't have photoURL, return null for now
-    return null;
+    const currentAccount = this.accountStore.currentAccount();
+    return currentAccount?.photoURL || null;
   });
   
   protected currentAccountType = computed((): AccountType => {
-    const contextType = this.contextStore.currentContextType();
-    if (contextType) {
-      return contextType as AccountType;
+    const currentAccount = this.accountStore.currentAccount();
+    if (currentAccount) {
+      return currentAccount.type as AccountType;
     }
     return 'user';
   });
@@ -168,12 +174,13 @@ export class AccountSwitcherComponent implements OnInit {
   /**
    * Handle account switching
    */
-  switchAccount(accountId: string): void {
-    // TODO: Implement account switching logic
-    console.log('Switching to account:', accountId);
+  switchAccount(account: Account): void {
+    // Update current account in AccountStore
+    this.accountStore.setCurrentAccount(account);
     
     // Announce to screen readers
-    this.announceMessage.set(`Switched to account ${accountId}`);
+    const accountName = account.displayName || account.email || account.id;
+    this.announceMessage.set(`Switched to account ${accountName}`);
     setTimeout(() => this.announceMessage.set(''), 1000);
   }
 }

@@ -3,6 +3,7 @@
  */
 import { InjectionToken } from '@angular/core';
 import {
+  AccountRepository,
   AuthRepository,
   OrganizationRepository,
   PartnerRepository,
@@ -11,6 +12,7 @@ import {
   WorkspaceRepository,
 } from '@domain/repositories';
 
+export const ACCOUNT_REPOSITORY = new InjectionToken<AccountRepository>('ACCOUNT_REPOSITORY');
 export const AUTH_REPOSITORY = new InjectionToken<AuthRepository>('AUTH_REPOSITORY');
 export const ORGANIZATION_REPOSITORY = new InjectionToken<OrganizationRepository>('ORGANIZATION_REPOSITORY');
 export const PARTNER_REPOSITORY = new InjectionToken<PartnerRepository>('PARTNER_REPOSITORY');

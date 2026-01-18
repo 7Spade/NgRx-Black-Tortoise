@@ -74,35 +74,42 @@
   <div class="menu-section">
     <div class="section-title">Personal Account</div>
     
-    <button
-      mat-menu-item
-      class="account-item"
-      role="menuitem"
-      [class.active]="currentAccountType() === 'user'"
-      [attr.aria-current]="currentAccountType() === 'user' ? 'true' : null">
-      
-      <div class="account-item-content">
-        <!-- Left: Avatar -->
-        <div class="item-avatar">
-          @if (avatarUrl(); as avatar) {
-            <img [src]="avatar" [alt]="displayName()">
-          } @else {
-            <mat-icon>person</mat-icon>
+    @if (accountStore.personalAccount(); as personalAccount) {
+      <button
+        mat-menu-item
+        class="account-item"
+        role="menuitem"
+        [class.active]="accountStore.currentAccount()?.id === personalAccount.id"
+        [attr.aria-current]="accountStore.currentAccount()?.id === personalAccount.id ? 'true' : null"
+        (click)="switchAccount(personalAccount)">
+        
+        <div class="account-item-content">
+          <!-- Left: Avatar -->
+          <div class="item-avatar">
+            @if (personalAccount.photoURL; as avatar) {
+              <img [src]="avatar" [alt]="personalAccount.displayName || personalAccount.email || 'User'">
+            } @else {
+              <mat-icon>person</mat-icon>
+            }
+          </div>
+          
+          <!-- Center: Info -->
+          <div class="item-info">
+            <div class="item-name">{{ personalAccount.displayName || personalAccount.email }}</div>
+            <div class="item-meta">User</div>
+          </div>
+          
+          <!-- Right: Check Icon -->
+          @if (accountStore.currentAccount()?.id === personalAccount.id) {
+            <mat-icon class="check-icon">check</mat-icon>
           }
         </div>
-        
-        <!-- Center: Info -->
-        <div class="item-info">
-          <div class="item-name">{{ displayName() }}</div>
-          <div class="item-meta">User</div>
-        </div>
-        
-        <!-- Right: Check Icon -->
-        @if (currentAccountType() === 'user') {
-          <mat-icon class="check-icon">check</mat-icon>
-        }
+      </button>
+    } @else {
+      <div class="empty-state">
+        No personal account
       </div>
-    </button>
+    }
   </div>
   
   <mat-divider></mat-divider>
@@ -111,9 +118,41 @@
   <div class="menu-section">
     <div class="section-title">Organizations</div>
     
-    <div class="empty-state">
-      No organizations yet
-    </div>
+    @if (accountStore.organizationAccounts().length > 0) {
+      @for (org of accountStore.organizationAccounts(); track org.id) {
+        <button
+          mat-menu-item
+          class="account-item"
+          role="menuitem"
+          [class.active]="accountStore.currentAccount()?.id === org.id"
+          [attr.aria-current]="accountStore.currentAccount()?.id === org.id ? 'true' : null"
+          (click)="switchAccount(org)">
+          
+          <div class="account-item-content">
+            <div class="item-avatar">
+              @if (org.photoURL; as avatar) {
+                <img [src]="avatar" [alt]="org.displayName || org.email || 'Organization'">
+              } @else {
+                <mat-icon>business</mat-icon>
+              }
+            </div>
+            
+            <div class="item-info">
+              <div class="item-name">{{ org.displayName || org.email }}</div>
+              <div class="item-meta">Organization</div>
+            </div>
+            
+            @if (accountStore.currentAccount()?.id === org.id) {
+              <mat-icon class="check-icon">check</mat-icon>
+            }
+          </div>
+        </button>
+      }
+    } @else {
+      <div class="empty-state">
+        No organizations yet
+      </div>
+    }
   </div>
   
   <mat-divider></mat-divider>
@@ -122,9 +161,41 @@
   <div class="menu-section">
     <div class="section-title">Teams</div>
     
-    <div class="empty-state">
-      No teams yet
-    </div>
+    @if (accountStore.teamAccounts().length > 0) {
+      @for (team of accountStore.teamAccounts(); track team.id) {
+        <button
+          mat-menu-item
+          class="account-item"
+          role="menuitem"
+          [class.active]="accountStore.currentAccount()?.id === team.id"
+          [attr.aria-current]="accountStore.currentAccount()?.id === team.id ? 'true' : null"
+          (click)="switchAccount(team)">
+          
+          <div class="account-item-content">
+            <div class="item-avatar">
+              @if (team.photoURL; as avatar) {
+                <img [src]="avatar" [alt]="team.displayName || team.email || 'Team'">
+              } @else {
+                <mat-icon>groups</mat-icon>
+              }
+            </div>
+            
+            <div class="item-info">
+              <div class="item-name">{{ team.displayName || team.email }}</div>
+              <div class="item-meta">Team</div>
+            </div>
+            
+            @if (accountStore.currentAccount()?.id === team.id) {
+              <mat-icon class="check-icon">check</mat-icon>
+            }
+          </div>
+        </button>
+      }
+    } @else {
+      <div class="empty-state">
+        No teams yet
+      </div>
+    }
   </div>
   
   <mat-divider></mat-divider>
@@ -133,9 +204,41 @@
   <div class="menu-section">
     <div class="section-title">Partners</div>
     
-    <div class="empty-state">
-      No partner relationships yet
-    </div>
+    @if (accountStore.partnerAccounts().length > 0) {
+      @for (partner of accountStore.partnerAccounts(); track partner.id) {
+        <button
+          mat-menu-item
+          class="account-item"
+          role="menuitem"
+          [class.active]="accountStore.currentAccount()?.id === partner.id"
+          [attr.aria-current]="accountStore.currentAccount()?.id === partner.id ? 'true' : null"
+          (click)="switchAccount(partner)">
+          
+          <div class="account-item-content">
+            <div class="item-avatar">
+              @if (partner.photoURL; as avatar) {
+                <img [src]="avatar" [alt]="partner.displayName || partner.email || 'Partner'">
+              } @else {
+                <mat-icon>handshake</mat-icon>
+              }
+            </div>
+            
+            <div class="item-info">
+              <div class="item-name">{{ partner.displayName || partner.email }}</div>
+              <div class="item-meta">Partner</div>
+            </div>
+            
+            @if (accountStore.currentAccount()?.id === partner.id) {
+              <mat-icon class="check-icon">check</mat-icon>
+            }
+          </div>
+        </button>
+      }
+    } @else {
+      <div class="empty-state">
+        No partner relationships yet
+      </div>
+    }
   </div>
   
   <mat-divider></mat-divider>
