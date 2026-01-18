@@ -5,8 +5,11 @@
   [matMenuTriggerFor]="accountMenu"
   (menuOpened)="onMenuOpened()"
   (menuClosed)="onMenuClosed()"
+  role="button"
   aria-label="Switch account"
-  [attr.aria-expanded]="isMenuOpen()">
+  aria-haspopup="true"
+  [attr.aria-expanded]="isMenuOpen()"
+  [attr.aria-controls]="isMenuOpen() ? 'account-menu' : null">
   
   <!-- Avatar Container -->
   <div class="avatar-container">
@@ -31,25 +34,39 @@
     }
   </div>
   
-  <!-- Account Name -->
-  <span class="account-name">{{ displayName() }}</span>
+  <!-- Account Name (hidden on mobile/tablet) -->
+  @if (!isMobile() && !isTablet()) {
+    <span class="account-name">{{ displayName() }}</span>
+  }
   
-  <!-- Dropdown Icon -->
+  <!-- Dropdown Icon (hidden on mobile) -->
   @if (!authStore.isLoading()) {
-    <mat-icon
-      class="dropdown-icon"
-      [class.rotated]="isMenuOpen()">
-      expand_more
-    </mat-icon>
+    @if (!isMobile()) {
+      <mat-icon
+        class="dropdown-icon"
+        [class.rotated]="isMenuOpen()">
+        expand_more
+      </mat-icon>
+    }
   } @else {
     <mat-spinner diameter="16" class="loading-spinner"></mat-spinner>
   }
 </button>
 
+<!-- Screen Reader Announcement Area -->
+<div
+  aria-live="polite"
+  aria-atomic="true"
+  class="sr-only">
+  {{ announceMessage() }}
+</div>
+
 <!-- Account Dropdown Menu -->
 <mat-menu
   #accountMenu="matMenu"
+  id="account-menu"
   class="account-menu"
+  role="menu"
   xPosition="before"
   yPosition="below">
   
@@ -60,7 +77,9 @@
     <button
       mat-menu-item
       class="account-item"
-      [class.active]="currentAccountType() === 'user'">
+      role="menuitem"
+      [class.active]="currentAccountType() === 'user'"
+      [attr.aria-current]="currentAccountType() === 'user' ? 'true' : null">
       
       <div class="account-item-content">
         <!-- Left: Avatar -->
@@ -122,7 +141,10 @@
   <mat-divider></mat-divider>
   
   <!-- Manage Accounts Option -->
-  <button mat-menu-item class="manage-accounts">
+  <button
+    mat-menu-item
+    class="manage-accounts"
+    role="menuitem">
     <mat-icon>settings</mat-icon>
     <span>Manage accounts...</span>
   </button>
