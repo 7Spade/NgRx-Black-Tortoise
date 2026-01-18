@@ -11,6 +11,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatDividerModule } from '@angular/material/divider';
 import { WorkspaceStore } from '@application/workspace/stores/workspace.store';
 import { ModuleStore } from '@application/module/stores/module.store';
+import { ContextStore } from '@application/context/stores/context.store';
 
 /**
  * Search Dialog Component
@@ -50,6 +51,7 @@ export class SearchDialogComponent {
   private router = inject(Router);
   private workspaceStore = inject(WorkspaceStore);
   private moduleStore = inject(ModuleStore);
+  private contextStore = inject(ContextStore);
 
   // Search state
   searchQuery = signal('');
@@ -101,7 +103,9 @@ export class SearchDialogComponent {
    */
   navigateToResult(type: 'workspace' | 'module', item: any): void {
     if (type === 'workspace') {
-      this.workspaceStore.setCurrentWorkspace(item);
+      // Use ContextStore to switch workspace (canonical owner)
+      // This will automatically propagate to WorkspaceStore and ModuleStore via reactive effects
+      this.contextStore.switchWorkspace(item.id);
       this.router.navigate(['/workspace', 'overview']);
     } else if (type === 'module') {
       this.router.navigate(['/workspace', item.route]);

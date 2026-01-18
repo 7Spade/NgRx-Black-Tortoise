@@ -86,15 +86,18 @@ export const WorkspaceStore = signalStore(
         switchMap((workspaceId) => workspaceService.getWorkspace(workspaceId)),
         tapResponse({
           next: (workspace) => {
-            patchState(store, {
-              currentWorkspace: workspace,
-              loading: false,
+            patchState(store, (state) => {
+              // Track access when workspace is loaded
+              const recent = workspace 
+                ? [workspace.id, ...state.recentWorkspaces.filter((id) => id !== workspace.id)].slice(0, 5)
+                : state.recentWorkspaces;
+              
+              return {
+                currentWorkspace: workspace,
+                loading: false,
+                recentWorkspaces: recent,
+              };
             });
-            
-            // Track access when workspace is loaded
-            if (workspace) {
-              store.trackAccess(workspace.id);
-            }
           },
           error: (error: Error) => {
             patchState(store, {
