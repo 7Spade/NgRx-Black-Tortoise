@@ -25,6 +25,57 @@ import {
 } from '@application/tokens';
 import { EventBusService } from '@shared/services/event-bus.service';
 
+/**
+ * ContextStore - CANONICAL SOURCE OF TRUTH for Application Context
+ * 
+ * ╔═══════════════════════════════════════════════════════════════════╗
+ * ║  🎯 SINGLE SOURCE OF TRUTH: Active Workspace & Application Context ║
+ * ╚═══════════════════════════════════════════════════════════════════╝
+ * 
+ * ARCHITECTURAL OWNERSHIP:
+ * ========================
+ * This store is the ONLY owner of:
+ * 1. currentWorkspaceId signal (active workspace ID)
+ * 2. current (AppContext) signal (user/org/team/partner context)
+ * 3. Workspace switching logic
+ * 
+ * CANONICAL REACTIVE FLOW:
+ * ========================
+ * 
+ * User clicks workspace → 
+ *   workspace-switcher.component.ts calls contextStore.switchWorkspace(id) →
+ *     ContextStore updates currentWorkspaceId signal →
+ *       WorkspaceStore.effect reacts and loads full workspace data →
+ *         ModuleStore.effect reacts and loads workspace modules →
+ *           UI updates automatically via signals
+ * 
+ * FORBIDDEN PATTERNS:
+ * ===================
+ * ❌ WorkspaceStore.setCurrentWorkspace() - NO SUCH METHOD
+ * ❌ Direct workspace mutation outside this store
+ * ❌ Components calling workspace repositories directly
+ * ❌ Cross-store imports for state mutation
+ * 
+ * ALLOWED PATTERNS:
+ * =================
+ * ✅ contextStore.switchWorkspace(workspaceId)
+ * ✅ contextStore.switchContext(context)
+ * ✅ Other stores read currentWorkspaceId() via computed/effect
+ * ✅ UI components read signals and emit events
+ * 
+ * DEPENDENCY DIRECTION (DDD):
+ * ===========================
+ * AuthStore → AccountStore → ContextStore → WorkspaceStore → ModuleStore
+ *                ↑                             ↓
+ *                └─────── (reacts via effects) ─┘
+ * 
+ * WHY THIS MATTERS:
+ * =================
+ * - Single mutation point prevents state inconsistency
+ * - Reactive propagation eliminates manual state sync
+ * - Clean separation enables testing and maintenance
+ * - Type-safe signal flow catches errors at compile-time
+ */
 export const ContextStore = signalStore(
   { providedIn: 'root' },
   withState(initialContextState),

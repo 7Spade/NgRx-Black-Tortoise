@@ -1,11 +1,52 @@
 /**
- * WorkspaceStore - Application Layer
+ * WorkspaceStore - PROJECTION-ONLY Reactive Store
  * 
- * Manages workspace state with NgRx Signals.
- * Includes recent and favorite workspace tracking.
+ * ╔═══════════════════════════════════════════════════════════════════╗
+ * ║  📖 READ-ONLY PROJECTION: Workspace Details from ContextStore      ║
+ * ╚═══════════════════════════════════════════════════════════════════╝
  * 
- * PROJECTION-ONLY: This store reacts to ContextStore.currentWorkspaceId()
- * and loads full workspace details. It does NOT own workspace switching logic.
+ * ARCHITECTURAL ROLE:
+ * ===================
+ * This store is a REACTIVE PROJECTION that:
+ * 1. Reacts to ContextStore.currentWorkspaceId() changes via effect
+ * 2. Loads full workspace details from repository
+ * 3. Provides computed signals for workspace data
+ * 4. NEVER mutates workspace selection state
+ * 
+ * CANONICAL REACTIVE FLOW:
+ * ========================
+ * 
+ * ContextStore.currentWorkspaceId signal changes →
+ *   WorkspaceStore.effect (line 197-207) detects change →
+ *     Calls loadWorkspace(newWorkspaceId) →
+ *       Updates currentWorkspace signal with full data →
+ *         ModuleStore.effect reacts to currentWorkspace →
+ *           Loads modules for new workspace
+ * 
+ * FORBIDDEN PATTERNS:
+ * ===================
+ * ❌ this.workspaceStore.setCurrentWorkspace() - NO SUCH METHOD
+ * ❌ this.workspaceStore.switchWorkspace() - NO SUCH METHOD
+ * ❌ Mutating currentWorkspaceId from this store
+ * ❌ Direct calls from UI to switch workspace
+ * 
+ * ALLOWED PATTERNS:
+ * =================
+ * ✅ Read currentWorkspace() signal for full workspace data
+ * ✅ Read workspaces() for available workspaces list
+ * ✅ Call loadWorkspaces() to refresh workspace list
+ * ✅ Call trackAccess(id) to update recent workspaces
+ * 
+ * TO SWITCH WORKSPACE:
+ * ====================
+ * Always use: contextStore.switchWorkspace(workspaceId)
+ * Never call: workspaceStore methods for switching
+ * 
+ * DEPENDENCY DIRECTION (DDD):
+ * ===========================
+ * ContextStore (owns currentWorkspaceId) →
+ *   WorkspaceStore (reacts and loads details) →
+ *     ModuleStore (reacts and loads modules)
  */
 import {
   patchState,
@@ -86,17 +127,9 @@ export const WorkspaceStore = signalStore(
         switchMap((workspaceId) => workspaceService.getWorkspace(workspaceId)),
         tapResponse({
           next: (workspace) => {
-            patchState(store, (state) => {
-              // Track access when workspace is loaded
-              const recent = workspace 
-                ? [workspace.id, ...state.recentWorkspaces.filter((id) => id !== workspace.id)].slice(0, 5)
-                : state.recentWorkspaces;
-              
-              return {
-                currentWorkspace: workspace,
-                loading: false,
-                recentWorkspaces: recent,
-              };
+            patchState(store, {
+              currentWorkspace: workspace,
+              loading: false,
             });
           },
           error: (error: Error) => {
