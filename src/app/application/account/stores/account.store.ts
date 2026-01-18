@@ -110,7 +110,7 @@ export const AccountStore = signalStore(
                 contextStore.switchContext({
                   type: 'organization',
                   organizationId: account.id,
-                  name: account.name,
+                  name: account.displayName || account.id,
                   role: 'member', // TODO: Get actual role from membership
                 });
                 break;
@@ -121,7 +121,7 @@ export const AccountStore = signalStore(
                   type: 'team',
                   teamId: account.id,
                   organizationId: teamAccount.organizationId || '',
-                  name: account.name,
+                  name: account.displayName || account.id,
                   role: 'member', // TODO: Get actual role from membership
                 });
                 break;
@@ -132,7 +132,7 @@ export const AccountStore = signalStore(
                   type: 'partner',
                   partnerId: account.id,
                   organizationId: partnerAccount.organizationId || '',
-                  name: account.name,
+                  name: account.displayName || account.id,
                   accessLevel: 'readonly', // TODO: Get actual access level
                 });
                 break;
