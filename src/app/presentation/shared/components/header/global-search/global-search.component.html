@@ -1,0 +1,16 @@
+@if (isVisible()) {
+  <mat-form-field appearance="fill" class="global-search">
+    <mat-icon matPrefix>search</mat-icon>
+    <input
+      matInput
+      type="search"
+      placeholder="Search workspaces, documents..."
+      [value]="searchQuery()"
+      (click)="openSearch()"
+      (keydown)="handleKeyboardShortcut($event)"
+      aria-label="Global search"
+      readonly
+    />
+    <span matSuffix class="keyboard-hint">⌘K</span>
+  </mat-form-field>
+}
