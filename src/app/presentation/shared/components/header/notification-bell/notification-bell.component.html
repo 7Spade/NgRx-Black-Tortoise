@@ -1,8 +1,16 @@
+<!-- 
+  ARCHITECTURAL COMPLIANCE:
+  =========================
+  ✅ Single viewModel() binding (no multiple signal reads)
+  ✅ Stable DOM with [hidden] instead of structural @if
+  ✅ No menu flicker during state changes
+-->
+
 <button
   mat-icon-button
   [matMenuTriggerFor]="notificationMenu"
-  [matBadge]="unreadCount()"
-  [matBadgeHidden]="!hasUnread()"
+  [matBadge]="facade.viewModel().unreadCount"
+  [matBadgeHidden]="!facade.viewModel().hasUnread"
   matBadgeColor="warn"
   matBadgeSize="small"
   class="notification-bell"
@@ -15,37 +23,43 @@
   <!-- Header -->
   <div class="menu-header">
     <h3>Notifications</h3>
-    @if (hasUnread()) {
-      <button mat-button (click)="markAllAsRead()">Mark all as read</button>
-    }
+    <button 
+      mat-button 
+      (click)="markAllAsRead()"
+      [hidden]="!facade.viewModel().hasUnread">
+      Mark all as read
+    </button>
   </div>
 
   <mat-divider />
 
   <!-- Recent notifications -->
-  @if (recentNotifications().length > 0) {
-    <div class="notifications-list">
-      @for (notification of recentNotifications(); track notification.id) {
-        <button
-          mat-menu-item
-          class="notification-item"
-          [class.unread]="!notification.read"
-          (click)="markAsRead(notification.id)"
-        >
-          <div class="notification-content">
-            <div class="notification-title">{{ notification.title }}</div>
-            <div class="notification-message">{{ notification.message }}</div>
-            <div class="notification-time">{{ notification.createdAt | date: 'short' }}</div>
-          </div>
-        </button>
-      }
-    </div>
-  } @else {
-    <div class="empty-state">
-      <mat-icon>notifications_none</mat-icon>
-      <p>No notifications</p>
-    </div>
-  }
+  <div 
+    class="notifications-list"
+    [hidden]="facade.viewModel().recentNotifications.length === 0">
+    @for (notification of facade.viewModel().recentNotifications; track notification.id) {
+      <button
+        mat-menu-item
+        class="notification-item"
+        [class.unread]="!notification.read"
+        (click)="markAsRead(notification.id)"
+      >
+        <div class="notification-content">
+          <div class="notification-title">{{ notification.title }}</div>
+          <div class="notification-message">{{ notification.message }}</div>
+          <div class="notification-time">{{ notification.createdAt | date: 'short' }}</div>
+        </div>
+      </button>
+    }
+  </div>
+  
+  <!-- Empty state -->
+  <div 
+    class="empty-state"
+    [hidden]="facade.viewModel().recentNotifications.length > 0">
+    <mat-icon>notifications_none</mat-icon>
+    <p>No notifications</p>
+  </div>
 
   <mat-divider />
 

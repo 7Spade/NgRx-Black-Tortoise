@@ -1,4 +1,4 @@
-import { Component, inject, computed } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -6,12 +6,22 @@ import { MatBadgeModule } from '@angular/material/badge';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatListModule } from '@angular/material/list';
 import { MatDividerModule } from '@angular/material/divider';
-import { NotificationStore } from '@application/notification/stores/notification.store';
-import { AuthStore } from '@application/auth/stores/auth.store';
+import { NotificationFacade } from '@application/notification/facades/notification.facade';
 
 /**
  * Notification Bell Component
- *
+ * 
+ * ╔═══════════════════════════════════════════════════════════════════╗
+ * ║  PRESENTATION LAYER: Notification Bell UI (PASSIVE RENDERER)     ║
+ * ╚═══════════════════════════════════════════════════════════════════╝
+ * 
+ * ARCHITECTURAL COMPLIANCE:
+ * =========================
+ * ✅ Uses NotificationFacade for ALL operations (no direct store access)
+ * ✅ Binds to single facade.viewModel() signal
+ * ✅ Delegates orchestration to Application layer
+ * ✅ Zero business logic - pure passive renderer + event emitter
+ * 
  * Displays notification icon with:
  * - Badge showing unread count
  * - Dropdown menu with recent notifications
@@ -38,33 +48,31 @@ import { AuthStore } from '@application/auth/stores/auth.store';
   styleUrl: './notification-bell.component.scss'
 })
 export class NotificationBellComponent {
-  private notificationStore = inject(NotificationStore);
-  private authStore = inject(AuthStore);
-
-  // Notification counts
-  unreadCount = this.notificationStore.unreadCount;
-  hasUnread = computed(() => this.unreadCount() > 0);
-
-  // Recent notifications (max 5 for dropdown)
-  recentNotifications = computed(() =>
-    this.notificationStore.notifications().slice(0, 5)
-  );
+  // FACADE INJECTION (ONLY)
+  protected facade = inject(NotificationFacade);
 
   /**
    * Mark notification as read
+   * 
+   * DELEGATION:
+   * ===========
+   * Delegates to NotificationFacade.markAsRead()
+   * No validation or orchestration in UI
    */
   markAsRead(notificationId: string): void {
-    this.notificationStore.markAsRead(notificationId);
+    this.facade.markAsRead(notificationId);
   }
 
   /**
    * Mark all notifications as read
+   * 
+   * DELEGATION:
+   * ===========
+   * Delegates to NotificationFacade.markAllAsRead()
+   * Facade handles auth validation + userId extraction
    */
   markAllAsRead(): void {
-    const user = this.authStore.user();
-    if (user) {
-      this.notificationStore.markAllAsRead(user.id);
-    }
+    this.facade.markAllAsRead();
   }
 
   /**

@@ -7,22 +7,30 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
-import { WorkspaceStore } from '@application/workspace/stores/workspace.store';
-import { AuthStore } from '@application/auth/stores/auth.store';
-import { OrganizationStore } from '@application/organization/stores/organization.store';
-import { Router } from '@angular/router';
-import { Workspace } from '@domain/workspace/entities/workspace.entity';
+import { WorkspaceFacade } from '@application/workspace/facades/workspace.facade';
 
 /**
  * Create Workspace Dialog Component
  * 
+ * ╔═══════════════════════════════════════════════════════════════════╗
+ * ║  PRESENTATION LAYER: Workspace Creation Form UI                  ║
+ * ╚═══════════════════════════════════════════════════════════════════╝
+ * 
+ * ARCHITECTURAL COMPLIANCE:
+ * =========================
+ * ✅ Uses WorkspaceFacade.createWorkspace() for orchestration
+ * ✅ NO direct store imports (AuthStore, OrganizationStore, WorkspaceStore)
+ * ✅ NO business logic (validation, object construction)
+ * ✅ Expresses user intent only (createWorkspace with form data)
+ * 
  * Allows users to create a new workspace with:
  * - Workspace name (required)
+ * - Display name (required)
  * - Description (optional)
- * - Workspace type selection (optional)
  * 
  * Form validation:
  * - Name: required, min 3 chars, max 50 chars
+ * - DisplayName: required, min 3 chars, max 50 chars
  * - Description: max 200 chars
  */
 @Component({
@@ -44,10 +52,9 @@ import { Workspace } from '@domain/workspace/entities/workspace.entity';
 export class CreateWorkspaceDialogComponent {
   private dialogRef = inject(MatDialogRef<CreateWorkspaceDialogComponent>);
   private fb = inject(FormBuilder);
-  private workspaceStore = inject(WorkspaceStore);
-  private authStore = inject(AuthStore);
-  private organizationStore = inject(OrganizationStore);
-  private router = inject(Router);
+  
+  // FACADE for workspace creation orchestration
+  private workspaceFacade = inject(WorkspaceFacade);
 
   // Form
   workspaceForm: FormGroup = this.fb.group({
@@ -62,6 +69,16 @@ export class CreateWorkspaceDialogComponent {
 
   /**
    * Create workspace
+   * 
+   * ARCHITECTURAL COMPLIANCE:
+   * =========================
+   * ✅ Delegates to WorkspaceFacade.createWorkspace()
+   * ✅ Facade handles:
+   *    - Auth/Organization context validation
+   *    - Workspace object construction
+   *    - Store creation call
+   *    - UX feedback (snackbar)
+   *    - Navigation on success
    */
   async createWorkspace(): Promise<void> {
     if (this.workspaceForm.invalid) {
@@ -74,38 +91,15 @@ export class CreateWorkspaceDialogComponent {
 
     try {
       const formValue = this.workspaceForm.value;
-      const currentUser = this.authStore.user();
-      const currentOrg = this.organizationStore.currentOrganization();
       
-      if (!currentUser || !currentOrg) {
-        throw new Error('User or organization not found');
-      }
-
-      // Create workspace object with all required fields
-      const workspaceData: Omit<Workspace, 'id'> = {
-        organizationId: currentOrg.id,
+      // Delegate to facade for complete orchestration
+      this.workspaceFacade.createWorkspace({
         name: formValue.name,
         displayName: formValue.displayName,
-        description: formValue.description || '',
-        ownerId: currentUser.id,
-        modules: {
-          overview: true,
-          documents: true,
-          tasks: true,
-          members: true,
-          permissions: true,
-          audit: false,
-          settings: true,
-          journal: false,
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        status: 'active' as const,
-      };
-
-      this.workspaceStore.createWorkspace(workspaceData);
+        description: formValue.description || ''
+      });
       
-      // Close dialog immediately - the store will handle the navigation
+      // Close dialog - facade handles navigation
       this.dialogRef.close(true);
     } catch (err) {
       console.error('Failed to create workspace:', err);

@@ -13,30 +13,32 @@
   
   <!-- Avatar Container -->
   <div class="avatar-container">
-    @if (viewModel().avatarUrl; as avatar) {
+    @if (facade.viewModel().currentAccount?.photoURL; as avatar) {
       <img
         [src]="avatar"
-        [alt]="viewModel().displayName"
+        [alt]="facade.viewModel().currentAccount?.displayName || 'Account'"
         class="avatar"
         loading="lazy">
     } @else {
       <mat-icon class="avatar-icon">
-        {{ getAccountTypeIcon(viewModel().currentAccountType) }}
+        {{ getAccountTypeIcon(facade.viewModel().currentAccount?.type || 'user') }}
       </mat-icon>
     }
     
     <!-- Account Type Badge -->
-    @if (viewModel().currentAccountType !== 'user') {
+    @if (facade.viewModel().currentAccount?.type !== 'user') {
       <span
         class="badge"
-        [attr.data-type]="viewModel().currentAccountType">
+        [attr.data-type]="facade.viewModel().currentAccount?.type">
       </span>
     }
   </div>
   
   <!-- Account Name (hidden on mobile/tablet) -->
   @if (!isMobile() && !isTablet()) {
-    <span class="account-name">{{ viewModel().displayName }}</span>
+    <span class="account-name">
+      {{ facade.viewModel().currentAccount?.displayName || facade.viewModel().currentAccount?.email || 'Account' }}
+    </span>
   }
   
   <!-- Dropdown Icon (hidden on mobile) -->
@@ -44,11 +46,11 @@
     <mat-icon
       class="dropdown-icon"
       [class.rotated]="isMenuOpen()"
-      [class.loading]="viewModel().isLoading">
+      [class.loading]="facade.viewModel().isLoading">
       expand_more
     </mat-icon>
   }
-  @if (viewModel().isLoading) {
+  @if (facade.viewModel().isLoading) {
     <mat-spinner diameter="16" class="loading-spinner"></mat-spinner>
   }
 </button>
@@ -79,16 +81,16 @@
       mat-menu-item
       class="account-item"
       role="menuitem"
-      [hidden]="!viewModel().personalAccount"
-      [class.active]="viewModel().personalAccount?.id === viewModel().currentAccountId"
-      [attr.aria-current]="viewModel().personalAccount?.id === viewModel().currentAccountId ? 'true' : null"
-      (click)="viewModel().personalAccount ? switchAccount(viewModel().personalAccount!) : null">
+      [hidden]="!facade.viewModel().personalAccount"
+      [class.active]="facade.viewModel().personalAccount?.id === facade.viewModel().currentAccountId"
+      [attr.aria-current]="facade.viewModel().personalAccount?.id === facade.viewModel().currentAccountId ? 'true' : null"
+      (click)="facade.viewModel().personalAccount ? switchAccount(facade.viewModel().personalAccount!) : null">
       
       <div class="account-item-content">
         <!-- Left: Avatar -->
         <div class="item-avatar">
-          @if (viewModel().personalAccount?.photoURL; as avatar) {
-            <img [src]="avatar" [alt]="viewModel().personalAccount?.displayName || viewModel().personalAccount?.email || 'User'">
+          @if (facade.viewModel().personalAccount?.photoURL; as avatar) {
+            <img [src]="avatar" [alt]="facade.viewModel().personalAccount?.displayName || facade.viewModel().personalAccount?.email || 'User'">
           } @else {
             <mat-icon>person</mat-icon>
           }
@@ -96,20 +98,20 @@
         
         <!-- Center: Info -->
         <div class="item-info">
-          <div class="item-name">{{ viewModel().personalAccount?.displayName || viewModel().personalAccount?.email }}</div>
+          <div class="item-name">{{ facade.viewModel().personalAccount?.displayName || facade.viewModel().personalAccount?.email }}</div>
           <div class="item-meta">User</div>
         </div>
         
         <!-- Right: Check Icon (CSS visibility toggle) -->
         <mat-icon 
           class="check-icon"
-          [style.visibility]="viewModel().personalAccount?.id === viewModel().currentAccountId ? 'visible' : 'hidden'">
+          [style.visibility]="facade.viewModel().personalAccount?.id === facade.viewModel().currentAccountId ? 'visible' : 'hidden'">
           check
         </mat-icon>
       </div>
     </button>
     
-    <div class="empty-state" [hidden]="viewModel().personalAccount">
+    <div class="empty-state" [hidden]="facade.viewModel().personalAccount">
       No personal account
     </div>
   </div>
@@ -121,14 +123,14 @@
     <div class="section-title">Organizations</div>
     
     <!-- ✅ STABLE DOM RULE: Pre-render all items, toggle visibility -->
-    <div [hidden]="viewModel().organizationAccounts.length === 0">
-      @for (org of viewModel().organizationAccounts; track org.id) {
+    <div [hidden]="facade.viewModel().organizationAccounts.length === 0">
+      @for (org of facade.viewModel().organizationAccounts; track org.id) {
         <button
           mat-menu-item
           class="account-item"
           role="menuitem"
-          [class.active]="org.id === viewModel().currentAccountId"
-          [attr.aria-current]="org.id === viewModel().currentAccountId ? 'true' : null"
+          [class.active]="org.id === facade.viewModel().currentAccountId"
+          [attr.aria-current]="org.id === facade.viewModel().currentAccountId ? 'true' : null"
           (click)="switchAccount(org)">
           
           <div class="account-item-content">
@@ -147,7 +149,7 @@
             
             <mat-icon 
               class="check-icon"
-              [style.visibility]="org.id === viewModel().currentAccountId ? 'visible' : 'hidden'">
+              [style.visibility]="org.id === facade.viewModel().currentAccountId ? 'visible' : 'hidden'">
               check
             </mat-icon>
           </div>
@@ -155,7 +157,7 @@
       }
     </div>
     
-    <div class="empty-state" [hidden]="viewModel().organizationAccounts.length > 0">
+    <div class="empty-state" [hidden]="facade.viewModel().organizationAccounts.length > 0">
       No organizations yet
     </div>
   </div>
@@ -167,14 +169,14 @@
     <div class="section-title">Teams</div>
     
     <!-- ✅ STABLE DOM RULE: Pre-render all items, toggle visibility -->
-    <div [hidden]="viewModel().teamAccounts.length === 0">
-      @for (team of viewModel().teamAccounts; track team.id) {
+    <div [hidden]="facade.viewModel().teamAccounts.length === 0">
+      @for (team of facade.viewModel().teamAccounts; track team.id) {
         <button
           mat-menu-item
           class="account-item"
           role="menuitem"
-          [class.active]="team.id === viewModel().currentAccountId"
-          [attr.aria-current]="team.id === viewModel().currentAccountId ? 'true' : null"
+          [class.active]="team.id === facade.viewModel().currentAccountId"
+          [attr.aria-current]="team.id === facade.viewModel().currentAccountId ? 'true' : null"
           (click)="switchAccount(team)">
           
           <div class="account-item-content">
@@ -193,7 +195,7 @@
             
             <mat-icon 
               class="check-icon"
-              [style.visibility]="team.id === viewModel().currentAccountId ? 'visible' : 'hidden'">
+              [style.visibility]="team.id === facade.viewModel().currentAccountId ? 'visible' : 'hidden'">
               check
             </mat-icon>
           </div>
@@ -201,7 +203,7 @@
       }
     </div>
     
-    <div class="empty-state" [hidden]="viewModel().teamAccounts.length > 0">
+    <div class="empty-state" [hidden]="facade.viewModel().teamAccounts.length > 0">
       No teams yet
     </div>
   </div>
@@ -213,14 +215,14 @@
     <div class="section-title">Partners</div>
     
     <!-- ✅ STABLE DOM RULE: Pre-render all items, toggle visibility -->
-    <div [hidden]="viewModel().partnerAccounts.length === 0">
-      @for (partner of viewModel().partnerAccounts; track partner.id) {
+    <div [hidden]="facade.viewModel().partnerAccounts.length === 0">
+      @for (partner of facade.viewModel().partnerAccounts; track partner.id) {
         <button
           mat-menu-item
           class="account-item"
           role="menuitem"
-          [class.active]="partner.id === viewModel().currentAccountId"
-          [attr.aria-current]="partner.id === viewModel().currentAccountId ? 'true' : null"
+          [class.active]="partner.id === facade.viewModel().currentAccountId"
+          [attr.aria-current]="partner.id === facade.viewModel().currentAccountId ? 'true' : null"
           (click)="switchAccount(partner)">
           
           <div class="account-item-content">
@@ -239,7 +241,7 @@
             
             <mat-icon 
               class="check-icon"
-              [style.visibility]="partner.id === viewModel().currentAccountId ? 'visible' : 'hidden'">
+              [style.visibility]="partner.id === facade.viewModel().currentAccountId ? 'visible' : 'hidden'">
               check
             </mat-icon>
           </div>
@@ -247,7 +249,7 @@
       }
     </div>
     
-    <div class="empty-state" [hidden]="viewModel().partnerAccounts.length > 0">
+    <div class="empty-state" [hidden]="facade.viewModel().partnerAccounts.length > 0">
       No partner relationships yet
     </div>
   </div>

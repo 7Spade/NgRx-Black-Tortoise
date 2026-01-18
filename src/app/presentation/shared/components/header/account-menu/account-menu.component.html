@@ -4,10 +4,10 @@
   class="account-trigger"
   aria-label="Account menu"
 >
-  @if (avatarUrl(); as url) {
-    <img [src]="url" [alt]="displayName()" class="avatar" />
+  @if (facade.userMenuViewModel().avatarUrl; as url) {
+    <img [src]="url" [alt]="facade.userMenuViewModel().displayName" class="avatar" />
   } @else {
-    <div class="avatar-placeholder">{{ initials() }}</div>
+    <div class="avatar-placeholder">{{ facade.userMenuViewModel().initials }}</div>
   }
 </button>
 

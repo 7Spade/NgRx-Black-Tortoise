@@ -8,7 +8,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs/operators';
-import { ModuleStore } from '@application/module/stores/module.store';
+import { ModuleFacade } from '@application/module/facades/module.facade';
 import { SidebarStore } from '@application/ui/stores/sidebar.store';
 import { Module } from '@domain/module';
 import { BREAKPOINTS } from '@shared/constants/breakpoints.constant';
@@ -16,6 +16,17 @@ import { ModuleItemComponent } from './module-item/module-item.component';
 
 /**
  * Sidebar Component
+ * 
+ * ╔═══════════════════════════════════════════════════════════════════╗
+ * ║  PRESENTATION LAYER: Sidebar UI (PASSIVE RENDERER)               ║
+ * ╚═══════════════════════════════════════════════════════════════════╝
+ * 
+ * ARCHITECTURAL COMPLIANCE:
+ * =========================
+ * ✅ Uses ModuleFacade for ALL module operations (no direct store access)
+ * ✅ Binds to single facade.viewModel() signal
+ * ✅ Delegates module reordering orchestration to Application layer
+ * ✅ Zero business logic - pure passive renderer + event emitter
  *
  * Displays workspace modules sidebar with:
  * - Collapsible/expandable sidebar
@@ -46,19 +57,14 @@ import { ModuleItemComponent } from './module-item/module-item.component';
 })
 export class SidebarComponent {
   private breakpointObserver = inject(BreakpointObserver);
-  private moduleStore = inject(ModuleStore);
-  private sidebarStore = inject(SidebarStore);
+  
+  // FACADE INJECTION (ONLY)
+  protected moduleFacade = inject(ModuleFacade);
+  protected sidebarStore = inject(SidebarStore);
 
   // Sidebar state
   collapsed = this.sidebarStore.collapsed;
   pinned = this.sidebarStore.pinned;
-
-  // Modules
-  modules = this.moduleStore.modules;
-  activeModuleId = computed(() => {
-    // TODO: Get from router or context store
-    return null;
-  });
 
   // Responsive - auto-collapse on mobile/tablet
   private isHandsetOrTablet = toSignal(
@@ -68,6 +74,9 @@ export class SidebarComponent {
       .pipe(map(result => result.matches)),
     { initialValue: false }
   );
+
+  // Computed modules for template binding
+  protected modules = computed(() => this.moduleFacade.viewModel().modules);
 
   /**
    * Toggle sidebar collapsed state
@@ -85,20 +94,21 @@ export class SidebarComponent {
 
   /**
    * Handle module reordering via drag-and-drop
+   * 
+   * DELEGATION:
+   * ===========
+   * Delegates to ModuleFacade.reorderModules()
+   * Facade handles:
+   * - Workspace context validation
+   * - Cross-workspace module check
+   * - Persistence
    */
   onModulesDrop(event: CdkDragDrop<Module[]>): void {
-    const modules = [...this.modules()];
+    const modules = [...this.moduleFacade.viewModel().modules];
     moveItemInArray(modules, event.previousIndex, event.currentIndex);
     
-    // Update module order with new positions
-    const orders = modules.map((m, index) => ({ id: m.id, order: index }));
-    
-    // Get current workspace ID (TODO: get from WorkspaceStore)
-    const workspaceId = modules[0]?.workspaceId || '';
-    
-    if (workspaceId) {
-      this.moduleStore.updateModuleOrder({ workspaceId, orders });
-    }
+    // Delegate to facade for orchestration
+    this.moduleFacade.reorderModules(modules);
   }
 
   /**
@@ -113,6 +123,6 @@ export class SidebarComponent {
    * Check if module is active
    */
   isModuleActive(module: Module): boolean {
-    return this.activeModuleId() === module.id;
+    return this.moduleFacade.viewModel().activeModuleId === module.id;
   }
 }
