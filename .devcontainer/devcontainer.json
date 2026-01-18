@@ -1,0 +1,98 @@
+{
+  // Dev Container 顯示名稱
+  "name": "NgRx-Dragon",
+
+  // 基底映像：Node.js 24（官方 DevContainers）
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:24",
+
+  // 啟用 DevContainer features（額外能力）
+  "features": {
+    // Node feature：確保 Node / pnpm 版本一致
+    "ghcr.io/devcontainers/features/node:2": {
+      "version": "24",          // 指定 Node.js 版本
+      "installPnpm": false       // 自動安裝 pnpm
+    }
+  },
+
+  // 掛載快取（加速 pnpm install）
+  "mounts": [
+    // 將本機 .pnpm-store 掛成 container cache，重建不重抓依賴
+    "source=${localWorkspaceFolder}/.npm-cache,target=/home/vscode/.npm-cache,type=cache"
+  ],
+
+  // Container 建立完成後執行的指令
+  "postCreateCommand": [
+    // 使用 lockfile 安裝依賴，避免版本漂移
+    "npm install --legacy-peer-deps",
+
+    // 預先 build，避免第一次啟動慢
+    "npm run build"
+  ],
+
+  // VS Code 專用設定（只在 container 生效）
+  "customizations": {
+    "vscode": {
+      // 自動安裝的 VS Code extensions
+      "extensions": [
+        "ms-vscode.vscode-typescript-next",      // 最新 TypeScript Server
+        "Angular.ng-template",                   // Angular 官方支援
+        "esbenp.prettier-vscode",                // Prettier 格式化
+
+        "GitHub.copilot",                        // Copilot inline 補碼
+        "GitHub.copilot-chat",                   // Copilot Chat
+        "GitHub.copilot-labs",                   // Copilot 實驗功能（可關）
+
+        "christian-kohler.path-intellisense",    // 路徑補完（Copilot 會忽略）
+        "VisualStudioExptTeam.vscodeintellicode",// IntelliCode（Copilot 會忽略）
+
+        "usernamehw.errorlens",                  // 錯誤高亮顯示
+        "eamodio.gitlens",                       // Git 資訊顯示
+        "mhutchie.git-graph"                     // Git 圖形化工具
+      ],
+
+      // VS Code 設定（等同 settings.json）
+      "settings": {
+        // 啟用 Copilot inline 補碼（效能關鍵）
+        "github.copilot.inlineSuggest.enable": true,
+
+        // 啟用 Copilot Chat 面板
+        "github.copilot.chat.enable": true,
+
+        // 啟用 Copilot Labs（實驗性，可視需求關）
+        "github.copilot.labs.enable": true,
+
+        // 告訴 Copilot 不要跟這些 extension 互搶資源
+        "github.copilot.advanced.disabledExtensions": [
+          "christian-kohler.path-intellisense",
+          "VisualStudioExptTeam.vscodeintellicode"
+        ],
+
+        // 排除檔案監聽（減少 CPU / IO）
+        "files.watcherExclude": {
+          "**/node_modules/**": true,   // node_modules 不監聽
+          "**/dist/**": true,           // build 產物不監聽
+          "**/.angular/**": true,       // Angular cache 不監聽
+          "**/.npm-cache/**": true     // npm cache 不監聽
+        },
+
+        // 搜尋時排除大型目錄
+        "search.exclude": {
+          "**/node_modules": true,      // 搜尋時忽略 node_modules
+          "**/dist": true,              // 忽略 build 輸出
+          "**/.angular": true,           // 忽略 Angular cache
+          "**/.npm-cache": true         // 忽略 npm cache
+        },
+
+        // 限制 TypeScript Server 記憶體，避免暴走拖慢 Copilot
+        "typescript.tsserver.maxTsServerMemory": 2048,
+
+        // 控制 IntelliSense 即時建議行為
+        "editor.quickSuggestions": {
+          "other": false,               // 關閉一般補完（讓 Copilot 主導）
+          "comments": false,            // 註解中不跳建議
+          "strings": true               // 字串中仍保留建議（i18n / action type）
+        }
+      }
+    }
+  }
+}
