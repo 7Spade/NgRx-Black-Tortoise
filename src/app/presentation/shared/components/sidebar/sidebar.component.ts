@@ -73,7 +73,7 @@ export class SidebarComponent {
    * Toggle sidebar collapsed state
    */
   toggleCollapsed(): void {
-    this.sidebarStore.toggleCollapsed();
+    this.sidebarStore.toggle();
   }
 
   /**
