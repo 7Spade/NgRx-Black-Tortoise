@@ -8,6 +8,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { FormsModule } from '@angular/forms';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -28,6 +29,7 @@ import { CreateWorkspaceDialogComponent } from '../../dialogs/create-workspace-d
  * - Responsive design (desktop/tablet/mobile)
  * - Accessibility (ARIA attributes, keyboard navigation)
  * - Material Design 3 styling
+ * - Real-time state propagation to ModuleStore and ContextStore
  * 
  * Integrates with WorkspaceStore and ContextStore for state management.
  */
@@ -43,7 +45,8 @@ import { CreateWorkspaceDialogComponent } from '../../dialogs/create-workspace-d
     MatProgressSpinnerModule,
     MatFormFieldModule,
     MatInputModule,
-    FormsModule
+    FormsModule,
+    MatSnackBarModule
   ],
   templateUrl: './workspace-switcher.component.html',
   styleUrl: './workspace-switcher.component.scss'
@@ -55,6 +58,7 @@ export class WorkspaceSwitcherComponent implements OnInit {
   private breakpointObserver = inject(BreakpointObserver);
   private destroyRef = inject(DestroyRef);
   private dialog = inject(MatDialog);
+  private snackBar = inject(MatSnackBar);
   
   // Responsive states
   protected isMobile = signal(false);
@@ -157,13 +161,38 @@ export class WorkspaceSwitcherComponent implements OnInit {
   /**
    * Handle workspace selection
    */
+  /**
+   * Select workspace with visual feedback
+   * 
+   * This method:
+   * 1. Updates WorkspaceStore.currentWorkspace signal
+   * 2. Triggers ModuleStore.loadWorkspaceModules() for module availability
+   * 3. Updates ContextStore with workspace information
+   * 4. Provides visual feedback via MatSnackBar
+   */
   selectWorkspace(workspace: Workspace): void {
+    const previousWorkspace = this.currentWorkspace();
+    
+    // Don't switch if selecting the same workspace
+    if (previousWorkspace?.id === workspace.id) {
+      this.snackBar.open('Already in this workspace', 'OK', { duration: 2000 });
+      return;
+    }
+    
+    // Update workspace in WorkspaceStore
+    // This will automatically propagate to ModuleStore and ContextStore
     this.workspaceStore.setCurrentWorkspace(workspace);
-    // TODO: Navigate to workspace or trigger workspace change event
-    console.log('Selected workspace:', workspace.id);
+    
+    // Visual feedback
+    const workspaceName = workspace.displayName || workspace.name;
+    this.snackBar.open(
+      `Switched to workspace: ${workspaceName}`,
+      'OK',
+      { duration: 3000 }
+    );
     
     // Announce to screen readers
-    this.announceMessage.set(`Switched to workspace ${workspace.displayName || workspace.name}`);
+    this.announceMessage.set(`Switched to workspace ${workspaceName}`);
     setTimeout(() => this.announceMessage.set(''), 1000);
   }
   

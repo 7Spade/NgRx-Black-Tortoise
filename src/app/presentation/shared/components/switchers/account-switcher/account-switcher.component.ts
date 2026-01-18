@@ -5,6 +5,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
@@ -30,6 +31,7 @@ type AccountType = 'user' | 'organization' | 'bot' | 'team' | 'partner';
  * - Accessibility (ARIA attributes, keyboard navigation)
  * - Material Design 3 styling
  * - Zone-less reactive state management
+ * - Real-time state propagation to ContextStore, WorkspaceStore, and ModuleStore
  * 
  * Integrates with AuthStore and ContextStore for state management.
  */
@@ -42,7 +44,8 @@ type AccountType = 'user' | 'organization' | 'bot' | 'team' | 'partner';
     MatMenuModule,
     MatIconModule,
     MatDividerModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatSnackBarModule
   ],
   templateUrl: './account-switcher.component.html',
   styleUrl: './account-switcher.component.scss'
@@ -54,6 +57,7 @@ export class AccountSwitcherComponent implements OnInit {
   protected contextStore = inject(ContextStore);
   private breakpointObserver = inject(BreakpointObserver);
   private destroyRef = inject(DestroyRef);
+  private snackBar = inject(MatSnackBar);
   
   // Responsive states
   protected isMobile = signal(false);
@@ -172,15 +176,56 @@ export class AccountSwitcherComponent implements OnInit {
   }
   
   /**
-   * Handle account switching
+   * Handle account switching with visual feedback
+   * 
+   * This method:
+   * 1. Updates AccountStore.currentAccount signal
+   * 2. Triggers ContextStore.switchContext() for organization/team/partner scoping
+   * 3. Reloads workspace list based on new context
+   * 4. Provides visual feedback via MatSnackBar
    */
   switchAccount(account: Account): void {
+    const previousAccount = this.accountStore.currentAccount();
+    
+    // Don't switch if selecting the same account
+    if (previousAccount?.id === account.id) {
+      this.snackBar.open('Already using this account', 'OK', { duration: 2000 });
+      return;
+    }
+    
     // Update current account in AccountStore
+    // This will automatically propagate to ContextStore and trigger workspace reload
     this.accountStore.setCurrentAccount(account);
     
-    // Announce to screen readers
+    // Visual feedback
     const accountName = account.displayName || account.email || account.id;
-    this.announceMessage.set(`Switched to account ${accountName}`);
+    const accountTypeLabel = this.getAccountTypeLabel(account.type as AccountType);
+    this.snackBar.open(
+      `Switched to ${accountTypeLabel}: ${accountName}`,
+      'OK',
+      { duration: 3000 }
+    );
+    
+    // Announce to screen readers
+    this.announceMessage.set(`Switched to ${accountTypeLabel} account ${accountName}`);
     setTimeout(() => this.announceMessage.set(''), 1000);
+  }
+  
+  /**
+   * Get human-readable label for account type
+   */
+  private getAccountTypeLabel(type: AccountType): string {
+    switch (type) {
+      case 'user':
+        return 'Personal Account';
+      case 'organization':
+        return 'Organization';
+      case 'team':
+        return 'Team';
+      case 'partner':
+        return 'Partner';
+      default:
+        return 'Account';
+    }
   }
 }

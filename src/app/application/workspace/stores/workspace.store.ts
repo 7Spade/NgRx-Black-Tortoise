@@ -112,12 +112,35 @@ export const WorkspaceStore = signalStore(
       },
 
       // Synchronous state updates
+      /**
+       * Set current workspace and propagate to dependent stores
+       * This ensures workspace switching triggers module availability updates
+       */
       setCurrentWorkspace(workspace: Workspace | null) {
         patchState(store, { currentWorkspace: workspace });
         
         // Track access when workspace is selected
         if (workspace) {
           this.trackAccess(workspace.id);
+          
+          // Propagate workspace switch to ModuleStore and ContextStore
+          // Import lazily to avoid circular dependencies
+          Promise.all([
+            import('@application/module/stores/module.store'),
+            import('@application/context/stores/context.store'),
+          ]).then(([{ ModuleStore }, { ContextStore }]) => {
+            const moduleStore = inject(ModuleStore);
+            const contextStore = inject(ContextStore);
+            
+            // Load modules for the selected workspace
+            moduleStore.loadWorkspaceModules(workspace.id);
+            
+            // Update context store with workspace information
+            contextStore.setCurrentWorkspace({
+              workspaceId: workspace.id,
+              workspaceName: workspace.displayName || workspace.name,
+            });
+          });
         }
       },
       setWorkspaces(workspaces: Workspace[]) {
