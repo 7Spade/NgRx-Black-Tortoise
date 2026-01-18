@@ -7,6 +7,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatDialog } from '@angular/material/dialog';
 import { FormsModule } from '@angular/forms';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -15,6 +16,7 @@ import { WorkspaceStore } from '@application/workspace/stores/workspace.store';
 import { ContextStore } from '@application/context/stores/context.store';
 import { Workspace } from '@domain/workspace';
 import { BREAKPOINTS } from '@shared/constants/breakpoints.constant';
+import { CreateWorkspaceDialogComponent } from '../../dialogs/create-workspace-dialog/create-workspace-dialog.component';
 
 /**
  * Workspace Switcher Component
@@ -52,6 +54,7 @@ export class WorkspaceSwitcherComponent implements OnInit {
   protected contextStore = inject(ContextStore);
   private breakpointObserver = inject(BreakpointObserver);
   private destroyRef = inject(DestroyRef);
+  private dialog = inject(MatDialog);
   
   // Responsive states
   protected isMobile = signal(false);
@@ -184,7 +187,13 @@ export class WorkspaceSwitcherComponent implements OnInit {
    * Handle create new workspace
    */
   createWorkspace(): void {
-    // TODO: Navigate to workspace creation page or open dialog
-    console.log('Create new workspace');
+    this.dialog.open(CreateWorkspaceDialogComponent, {
+      width: '600px',
+      maxWidth: '90vw',
+      panelClass: 'create-workspace-dialog-panel',
+      autoFocus: true,
+      restoreFocus: true,
+      disableClose: false
+    });
   }
 }
