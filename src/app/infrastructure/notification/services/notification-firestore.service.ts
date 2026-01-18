@@ -14,10 +14,10 @@ import {
   deleteDoc,
   setDoc,
   serverTimestamp,
-  Timestamp
+  Timestamp,
+  getDocs
 } from '@angular/fire/firestore';
-import { Observable, from } from 'rxjs';
-import { map, switchMap } from 'rxjs/operators';
+import { firstValueFrom } from 'rxjs';
 
 // Domain
 import { 
@@ -31,7 +31,7 @@ import { NotificationRepository } from '@domain/repositories/notification.reposi
 
 /**
  * Firestore implementation of NotificationRepository
- * Manages user notifications persistence
+ * Promise-based implementation for framework-agnostic domain layer
  */
 @Injectable({
   providedIn: 'root'
@@ -43,7 +43,7 @@ export class NotificationFirestoreService implements NotificationRepository {
   /**
    * Get all notifications for a user
    */
-  getUserNotifications(userId: string): Observable<Notification[]> {
+  async getUserNotifications(userId: string): Promise<Notification[]> {
     const q = query(
       this.notificationsCollection,
       where('userId', '==', userId),
@@ -51,15 +51,14 @@ export class NotificationFirestoreService implements NotificationRepository {
       limit(50)
     );
     
-    return collectionData(q, { idField: 'id' }).pipe(
-      map(docs => docs.map(doc => this.mapToNotification(doc)))
-    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => this.mapToNotification({ ...doc.data(), id: doc.id }));
   }
 
   /**
    * Get unread notifications for a user
    */
-  getUnreadNotifications(userId: string): Observable<Notification[]> {
+  async getUnreadNotifications(userId: string): Promise<Notification[]> {
     const q = query(
       this.notificationsCollection,
       where('userId', '==', userId),
@@ -67,15 +66,14 @@ export class NotificationFirestoreService implements NotificationRepository {
       orderBy('createdAt', 'desc')
     );
     
-    return collectionData(q, { idField: 'id' }).pipe(
-      map(docs => docs.map(doc => this.mapToNotification(doc)))
-    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => this.mapToNotification({ ...doc.data(), id: doc.id }));
   }
 
   /**
    * Get notifications by type
    */
-  getNotificationsByType(userId: string, type: NotificationType): Observable<Notification[]> {
+  async getNotificationsByType(userId: string, type: NotificationType): Promise<Notification[]> {
     const q = query(
       this.notificationsCollection,
       where('userId', '==', userId),
@@ -84,15 +82,14 @@ export class NotificationFirestoreService implements NotificationRepository {
       limit(20)
     );
     
-    return collectionData(q, { idField: 'id' }).pipe(
-      map(docs => docs.map(doc => this.mapToNotification(doc)))
-    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => this.mapToNotification({ ...doc.data(), id: doc.id }));
   }
 
   /**
    * Get notifications by priority
    */
-  getNotificationsByPriority(userId: string, priority: NotificationPriority): Observable<Notification[]> {
+  async getNotificationsByPriority(userId: string, priority: NotificationPriority): Promise<Notification[]> {
     const q = query(
       this.notificationsCollection,
       where('userId', '==', userId),
@@ -101,173 +98,154 @@ export class NotificationFirestoreService implements NotificationRepository {
       orderBy('createdAt', 'desc')
     );
     
-    return collectionData(q, { idField: 'id' }).pipe(
-      map(docs => docs.map(doc => this.mapToNotification(doc)))
-    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => this.mapToNotification({ ...doc.data(), id: doc.id }));
   }
 
   /**
    * Get a single notification by ID
    */
-  getNotification(notificationId: string): Observable<Notification | null> {
+  async getNotification(notificationId: string): Promise<Notification | null> {
     const notificationDoc = doc(this.firestore, `notifications/${notificationId}`);
-    return docData(notificationDoc, { idField: 'id' }).pipe(
-      map(doc => doc ? this.mapToNotification(doc) : null)
-    );
+    const data = await firstValueFrom(docData(notificationDoc, { idField: 'id' }));
+    return data ? this.mapToNotification(data) : null;
   }
 
   /**
    * Create a new notification
    */
-  createNotification(notificationData: Omit<Notification, 'id'>): Observable<string> {
-    return from(addDoc(this.notificationsCollection, notificationData)).pipe(
-      map(docRef => docRef.id)
-    );
+  async createNotification(notificationData: Omit<Notification, 'id'>): Promise<string> {
+    const docRef = await addDoc(this.notificationsCollection, notificationData);
+    return docRef.id;
   }
 
   /**
    * Create notifications in bulk
    */
-  createNotifications(notifications: Omit<Notification, 'id'>[]): Observable<string[]> {
+  async createNotifications(notifications: Omit<Notification, 'id'>[]): Promise<string[]> {
     const creates = notifications.map(notification => 
       addDoc(this.notificationsCollection, notification)
     );
     
-    return from(Promise.all(creates)).pipe(
-      map(refs => refs.map(ref => ref.id))
-    );
+    const refs = await Promise.all(creates);
+    return refs.map(ref => ref.id);
   }
 
   /**
    * Mark notification as read
    */
-  markAsRead(notificationId: string): Observable<void> {
+  async markAsRead(notificationId: string): Promise<void> {
     const notificationDoc = doc(this.firestore, `notifications/${notificationId}`);
-    return from(updateDoc(notificationDoc, { 
+    await updateDoc(notificationDoc, { 
       read: true,
       readAt: serverTimestamp()
-    }));
+    });
   }
 
   /**
    * Mark all notifications as read for a user
    */
-  markAllAsRead(userId: string): Observable<void> {
-    return this.getUnreadNotifications(userId).pipe(
-      switchMap(notifications => {
-        const updates = notifications.map(notification => {
-          const notificationDoc = doc(this.firestore, `notifications/${notification.id}`);
-          return updateDoc(notificationDoc, { 
-            read: true,
-            readAt: serverTimestamp()
-          });
-        });
-        
-        return from(Promise.all(updates));
-      }),
-      map(() => undefined)
-    );
+  async markAllAsRead(userId: string): Promise<void> {
+    const notifications = await this.getUnreadNotifications(userId);
+    const updates = notifications.map(notification => {
+      const notificationDoc = doc(this.firestore, `notifications/${notification.id}`);
+      return updateDoc(notificationDoc, { 
+        read: true,
+        readAt: serverTimestamp()
+      });
+    });
+    
+    await Promise.all(updates);
   }
 
   /**
    * Mark notification as archived
    */
-  markAsArchived(notificationId: string): Observable<void> {
+  async markAsArchived(notificationId: string): Promise<void> {
     const notificationDoc = doc(this.firestore, `notifications/${notificationId}`);
-    return from(updateDoc(notificationDoc, { 
+    await updateDoc(notificationDoc, { 
       archived: true,
       archivedAt: serverTimestamp()
-    }));
+    });
   }
 
   /**
    * Delete a notification
    */
-  deleteNotification(notificationId: string): Observable<void> {
+  async deleteNotification(notificationId: string): Promise<void> {
     const notificationDoc = doc(this.firestore, `notifications/${notificationId}`);
-    return from(deleteDoc(notificationDoc));
+    await deleteDoc(notificationDoc);
   }
 
   /**
    * Delete multiple notifications
    */
-  deleteNotifications(ids: string[]): Observable<void> {
+  async deleteNotifications(ids: string[]): Promise<void> {
     const deletes = ids.map(id => {
       const notificationDoc = doc(this.firestore, `notifications/${id}`);
       return deleteDoc(notificationDoc);
     });
     
-    return from(Promise.all(deletes)).pipe(
-      map(() => undefined)
-    );
+    await Promise.all(deletes);
   }
 
   /**
    * Clean up expired notifications
    */
-  cleanupExpiredNotifications(): Observable<void> {
+  async cleanupExpiredNotifications(): Promise<void> {
     const now = new Date();
     const q = query(
       this.notificationsCollection,
       where('expiresAt', '<=', now)
     );
     
-    return from(
-      collectionData(q, { idField: 'id' })
-    ).pipe(
-      switchMap(docs => {
-        const deletes = docs.map(notification => {
-          const notificationDocRef = doc(this.firestore, `notifications/${notification['id']}`);
-          return deleteDoc(notificationDocRef);
-        });
-        return Promise.all(deletes);
-      }),
-      map(() => undefined)
-    );
+    const snapshot = await getDocs(q);
+    const deletes = snapshot.docs.map(notificationDoc => {
+      return deleteDoc(notificationDoc.ref);
+    });
+    await Promise.all(deletes);
   }
 
   /**
    * Get notification statistics
    */
-  getNotificationStats(userId: string): Observable<NotificationStats> {
-    return this.getUserNotifications(userId).pipe(
-      map(notifications => ({
-        total: notifications.length,
-        unread: notifications.filter(n => !n.read).length,
-        byType: notifications.reduce((acc, n) => {
-          acc[n.type] = (acc[n.type] || 0) + 1;
-          return acc;
-        }, {} as Record<NotificationType, number>),
-        byPriority: notifications.reduce((acc, n) => {
-          acc[n.priority] = (acc[n.priority] || 0) + 1;
-          return acc;
-        }, {} as Record<NotificationPriority, number>)
-      }))
-    );
+  async getNotificationStats(userId: string): Promise<NotificationStats> {
+    const notifications = await this.getUserNotifications(userId);
+    return {
+      total: notifications.length,
+      unread: notifications.filter(n => !n.read).length,
+      byType: notifications.reduce((acc, n) => {
+        acc[n.type] = (acc[n.type] || 0) + 1;
+        return acc;
+      }, {} as Record<NotificationType, number>),
+      byPriority: notifications.reduce((acc, n) => {
+        acc[n.priority] = (acc[n.priority] || 0) + 1;
+        return acc;
+      }, {} as Record<NotificationPriority, number>)
+    };
   }
 
   /**
    * Get notification settings for a user
    */
-  getNotificationSettings(userId: string): Observable<NotificationSettings | null> {
+  async getNotificationSettings(userId: string): Promise<NotificationSettings | null> {
     const settingsDoc = doc(this.firestore, `notification-settings/${userId}`);
-    return docData(settingsDoc, { idField: 'id' }).pipe(
-      map(doc => doc ? doc as NotificationSettings : null)
-    );
+    const data = await firstValueFrom(docData(settingsDoc, { idField: 'id' }));
+    return data ? data as NotificationSettings : null;
   }
 
   /**
    * Update notification settings
    */
-  updateNotificationSettings(userId: string, settings: Partial<NotificationSettings>): Observable<void> {
+  async updateNotificationSettings(userId: string, settings: Partial<NotificationSettings>): Promise<void> {
     const settingsDoc = doc(this.firestore, `notification-settings/${userId}`);
-    return from(updateDoc(settingsDoc, settings));
+    await updateDoc(settingsDoc, settings);
   }
 
   /**
    * Create default notification settings
    */
-  createDefaultNotificationSettings(userId: string): Observable<NotificationSettings> {
+  async createDefaultNotificationSettings(userId: string): Promise<NotificationSettings> {
     const defaultSettings: NotificationSettings = {
       accountId: userId,
       emailNotifications: true,
@@ -290,9 +268,8 @@ export class NotificationFirestoreService implements NotificationRepository {
     };
 
     const settingsDoc = doc(this.firestore, `notification-settings/${userId}`);
-    return from(setDoc(settingsDoc, defaultSettings)).pipe(
-      map(() => defaultSettings)
-    );
+    await setDoc(settingsDoc, defaultSettings);
+    return defaultSettings;
   }
 
   /**

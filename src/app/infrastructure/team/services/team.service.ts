@@ -3,23 +3,21 @@ import {
   Firestore,
   collection,
   doc,
-  docData,
-  collectionData,
   setDoc,
   updateDoc,
   deleteDoc,
   query,
   where,
   QueryConstraint,
+  getDocs,
+  getDoc
 } from '@angular/fire/firestore';
-import { Observable, from, of } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
 import { Team } from '@domain/team';
 import { TeamRepository } from '@domain/repositories';
 
 /**
  * TeamService
- * Handles CRUD operations for teams (SubUnit - Internal) with reactive streams
+ * Promise-based implementation for framework-agnostic domain layer
  */
 @Injectable({
   providedIn: 'root',
@@ -29,33 +27,32 @@ export class TeamService implements TeamRepository {
   private collectionName = 'teams';
 
   /**
-   * Get team by ID - reactive stream
+   * Get team by ID
    */
-  getTeam(id: string): Observable<Team | null> {
+  async getTeam(id: string): Promise<Team | null> {
     const docRef = doc(this.firestore, this.collectionName, id);
-    return docData(docRef, { idField: 'id' }).pipe(
-      map((data) => (data ? ({ ...data, id } as Team) : null)),
-      catchError(() => of(null))
-    );
+    const snapshot = await getDoc(docRef);
+    if (!snapshot.exists()) {
+      return null;
+    }
+    return { ...snapshot.data(), id } as Team;
   }
 
   /**
-   * Get all teams for an organization - reactive stream
+   * Get all teams for an organization
    */
-  getOrganizationTeams(organizationId: string): Observable<Team[]> {
+  async getOrganizationTeams(organizationId: string): Promise<Team[]> {
     const collectionRef = collection(this.firestore, this.collectionName);
     const q = query(collectionRef, where('organizationId', '==', organizationId));
     
-    return collectionData(q, { idField: 'id' }).pipe(
-      map((data) => data as Team[]),
-      catchError(() => of([]))
-    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }) as Team);
   }
 
   /**
-   * List all teams (with optional filters) - reactive stream
+   * List all teams (with optional filters)
    */
-  list(filters: Record<string, unknown> = {}): Observable<Team[]> {
+  async list(filters: Record<string, unknown> = {}): Promise<Team[]> {
     const collectionRef = collection(this.firestore, this.collectionName);
     
     // Build query constraints from filters
@@ -68,35 +65,32 @@ export class TeamService implements TeamRepository {
     
     const q = constraints.length > 0 ? query(collectionRef, ...constraints) : collectionRef;
     
-    return collectionData(q, { idField: 'id' }).pipe(
-      map((data) => data as Team[]),
-      catchError(() => of([]))
-    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }) as Team);
   }
 
   /**
    * Create a new team
    */
-  createTeam(team: Omit<Team, 'id'>): Observable<string> {
+  async createTeam(team: Omit<Team, 'id'>): Promise<string> {
     const docRef = doc(collection(this.firestore, this.collectionName));
-    return from(
-      setDoc(docRef, team).then(() => docRef.id)
-    );
+    await setDoc(docRef, team);
+    return docRef.id;
   }
 
   /**
    * Update an existing team
    */
-  updateTeam(id: string, data: Partial<Team>): Observable<void> {
+  async updateTeam(id: string, data: Partial<Team>): Promise<void> {
     const docRef = doc(this.firestore, this.collectionName, id);
-    return from(updateDoc(docRef, data));
+    await updateDoc(docRef, data);
   }
 
   /**
    * Delete a team
    */
-  deleteTeam(id: string): Observable<void> {
+  async deleteTeam(id: string): Promise<void> {
     const docRef = doc(this.firestore, this.collectionName, id);
-    return from(deleteDoc(docRef));
+    await deleteDoc(docRef);
   }
 }

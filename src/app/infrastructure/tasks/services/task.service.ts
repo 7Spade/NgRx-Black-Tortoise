@@ -1,6 +1,6 @@
 /**
  * Task Service - Firestore integration for tasks
- * Following modern reactive patterns with collectionData/docData
+ * Promise-based implementation for framework-agnostic domain layer
  * PRD: @angular/fire/firestore (Transaction | Batch | Query)
  */
 
@@ -8,9 +8,7 @@ import { Injectable, inject } from '@angular/core';
 import {
   Firestore,
   collection,
-  collectionData,
   doc,
-  docData,
   addDoc,
   updateDoc,
   deleteDoc,
@@ -22,9 +20,8 @@ import {
   QueryConstraint,
   serverTimestamp,
   Timestamp,
+  getDocs
 } from '@angular/fire/firestore';
-import { Observable, of } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
 import { Task, Workflow, TaskFilter } from '@domain/tasks';
 import { TaskRepository } from '@domain/repositories';
 
@@ -35,9 +32,9 @@ export class TaskService implements TaskRepository {
   private workflowsCollection = collection(this.firestore, 'workflows');
 
   /**
-   * Get all tasks for a workspace with real-time updates
+   * Get all tasks for a workspace
    */
-  getTasks(workspaceId: string, filter?: TaskFilter): Observable<Task[]> {
+  async getTasks(workspaceId: string, filter?: TaskFilter): Promise<Task[]> {
     const constraints: QueryConstraint[] = [
       where('workspaceId', '==', workspaceId),
     ];
@@ -62,190 +59,134 @@ export class TaskService implements TaskRepository {
 
     const q = query(this.tasksCollection, ...constraints);
 
-    return collectionData(q, { idField: 'id' }).pipe(
-      map((tasks) => tasks.map((task) => this.convertTimestamps(task as any))),
-      catchError((error) => {
-        console.error('Error fetching tasks:', error);
-        return of([]);
-      })
-    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => this.convertTimestamps({ ...doc.data(), id: doc.id }) as Task);
   }
 
   /**
-   * Get single task by ID with real-time updates
+   * Get single task by ID
    */
-  getTask(id: string): Observable<Task | null> {
+  async getTask(id: string): Promise<Task | null> {
     const taskDoc = doc(this.tasksCollection, id);
-    return docData(taskDoc, { idField: 'id' }).pipe(
-      map((task) => (task ? this.convertTimestamps(task as any) : null)),
-      catchError(() => of(null))
-    );
+    const snapshot = await getDocs(query(collection(this.firestore, 'tasks'), where('__name__', '==', id)));
+    if (snapshot.empty) {
+      return null;
+    }
+    const data = snapshot.docs[0]?.data();
+    if (!data) {
+      return null;
+    }
+    return this.convertTimestamps({ ...data, id }) as Task;
   }
 
   /**
    * Get all workflows for a workspace
    */
-  getWorkflows(workspaceId: string): Observable<Workflow[]> {
+  async getWorkflows(workspaceId: string): Promise<Workflow[]> {
     const q = query(
       this.workflowsCollection,
       where('workspaceId', '==', workspaceId),
       orderBy('name', 'asc')
     );
 
-    return collectionData(q, { idField: 'id' }).pipe(
-      map((workflows) =>
-        workflows.map((wf) => this.convertTimestamps(wf as any))
-      ),
-      catchError(() => of([]))
-    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => this.convertTimestamps({ ...doc.data(), id: doc.id }) as Workflow);
   }
 
   /**
    * Create a new task
    */
-  createTask(task: Omit<Task, 'id'>): Observable<string> {
+  async createTask(task: Omit<Task, 'id'>): Promise<string> {
     const taskData = {
       ...task,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
 
-    return new Observable<string>((observer) => {
-      addDoc(this.tasksCollection, taskData)
-        .then((docRef) => {
-          observer.next(docRef.id);
-          observer.complete();
-        })
-        .catch((error) => observer.error(error));
-    });
+    const docRef = await addDoc(this.tasksCollection, taskData);
+    return docRef.id;
   }
 
   /**
    * Update task status using Firestore transaction
    * Ensures atomic updates for progress calculations
    */
-  updateTaskStatus(taskId: string, status: Task['status']): Observable<void> {
-    return new Observable<void>((observer) => {
-      const taskDoc = doc(this.tasksCollection, taskId);
+  async updateTaskStatus(taskId: string, status: Task['status']): Promise<void> {
+    const taskDoc = doc(this.tasksCollection, taskId);
 
-      runTransaction(this.firestore, async (transaction) => {
-        const taskSnapshot = await transaction.get(taskDoc);
-        if (!taskSnapshot.exists()) {
-          throw new Error('Task not found');
-        }
+    await runTransaction(this.firestore, async (transaction) => {
+      const taskSnapshot = await transaction.get(taskDoc);
+      if (!taskSnapshot.exists()) {
+        throw new Error('Task not found');
+      }
 
-        const updateData: any = {
-          status,
-          updatedAt: serverTimestamp(),
-        };
+      const updateData: any = {
+        status,
+        updatedAt: serverTimestamp(),
+      };
 
-        if (status === 'done') {
-          updateData.completedDate = serverTimestamp();
-          updateData.progress = 100;
-        }
+      if (status === 'done') {
+        updateData.completedDate = serverTimestamp();
+        updateData.progress = 100;
+      }
 
-        transaction.update(taskDoc, updateData);
-      })
-        .then(() => {
-          observer.next();
-          observer.complete();
-        })
-        .catch((error) => observer.error(error));
+      transaction.update(taskDoc, updateData);
     });
   }
 
   /**
    * Update task details
    */
-  updateTask(taskId: string, updates: Partial<Task>): Observable<void> {
+  async updateTask(taskId: string, updates: Partial<Task>): Promise<void> {
     const taskDoc = doc(this.tasksCollection, taskId);
     const updateData = {
       ...updates,
       updatedAt: serverTimestamp(),
     };
 
-    return new Observable<void>((observer) => {
-      updateDoc(taskDoc, updateData)
-        .then(() => {
-          observer.next();
-          observer.complete();
-        })
-        .catch((error) => observer.error(error));
-    });
+    await updateDoc(taskDoc, updateData);
   }
 
   /**
    * Delete task (with cascade for subtasks using batch)
    */
-  deleteTask(taskId: string, cascadeChildren = true): Observable<void> {
-    return new Observable<void>((observer) => {
-      if (!cascadeChildren) {
-        const taskDoc = doc(this.tasksCollection, taskId);
-        deleteDoc(taskDoc)
-          .then(() => {
-            observer.next();
-            observer.complete();
-          })
-          .catch((error) => observer.error(error));
-        return;
-      }
+  async deleteTask(taskId: string, cascadeChildren = true): Promise<void> {
+    if (!cascadeChildren) {
+      const taskDoc = doc(this.tasksCollection, taskId);
+      await deleteDoc(taskDoc);
+      return;
+    }
 
-      // Get all child tasks and delete in batch
-      const childQuery = query(
-        this.tasksCollection,
-        where('parentId', '==', taskId)
-      );
+    // Get all child tasks and delete in batch
+    const childQuery = query(
+      this.tasksCollection,
+      where('parentId', '==', taskId)
+    );
 
-      collectionData(childQuery, { idField: 'id' })
-        .pipe(
-          map((children) => {
-            const batch = writeBatch(this.firestore);
-            const taskDoc = doc(this.tasksCollection, taskId);
-            batch.delete(taskDoc);
+    const snapshot = await getDocs(childQuery);
+    const batch = writeBatch(this.firestore);
+    const taskDoc = doc(this.tasksCollection, taskId);
+    batch.delete(taskDoc);
 
-            children.forEach((child: any) => {
-              const childDoc = doc(this.tasksCollection, child.id);
-              batch.delete(childDoc);
-            });
-
-            return batch;
-          })
-        )
-        .subscribe({
-          next: (batch) => {
-            batch
-              .commit()
-              .then(() => {
-                observer.next();
-                observer.complete();
-              })
-              .catch((error) => observer.error(error));
-          },
-          error: (error) => observer.error(error),
-        });
+    snapshot.docs.forEach(childDoc => {
+      batch.delete(childDoc.ref);
     });
+
+    await batch.commit();
   }
 
   /**
    * Reorder tasks using batch update
    */
-  reorderTasks(tasks: { id: string; order: number }[]): Observable<void> {
-    return new Observable<void>((observer) => {
-      const batch = writeBatch(this.firestore);
+  async reorderTasks(tasks: { id: string; order: number }[]): Promise<void> {
+    const batch = writeBatch(this.firestore);
 
-      tasks.forEach(({ id, order }) => {
-        const taskDoc = doc(this.tasksCollection, id);
-        batch.update(taskDoc, { order, updatedAt: serverTimestamp() });
-      });
-
-      batch
-        .commit()
-        .then(() => {
-          observer.next();
-          observer.complete();
-        })
-        .catch((error) => observer.error(error));
+    tasks.forEach(({ id, order }) => {
+      const taskDoc = doc(this.tasksCollection, id);
+      batch.update(taskDoc, { order, updatedAt: serverTimestamp() });
     });
+
+    await batch.commit();
   }
 
   /**

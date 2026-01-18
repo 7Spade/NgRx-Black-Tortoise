@@ -13,10 +13,10 @@ import {
   deleteDoc,
   serverTimestamp,
   Timestamp,
-  DocumentReference
+  DocumentReference,
+  getDocs
 } from '@angular/fire/firestore';
-import { Observable, from } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { firstValueFrom } from 'rxjs';
 
 // Domain
 import { Module, ModuleType, DEFAULT_MODULES } from '@domain/module';
@@ -24,7 +24,7 @@ import { ModuleRepository } from '@domain/repositories/module.repository.interfa
 
 /**
  * Firestore implementation of ModuleRepository
- * Manages workspace modules persistence
+ * Promise-based implementation for framework-agnostic domain layer
  */
 @Injectable({
   providedIn: 'root'
@@ -36,22 +36,21 @@ export class ModuleFirestoreService implements ModuleRepository {
   /**
    * Get all modules for a workspace
    */
-  getWorkspaceModules(workspaceId: string): Observable<Module[]> {
+  async getWorkspaceModules(workspaceId: string): Promise<Module[]> {
     const q = query(
       this.modulesCollection,
       where('workspaceId', '==', workspaceId),
       orderBy('order', 'asc')
     );
     
-    return collectionData(q, { idField: 'id' }).pipe(
-      map(docs => docs.map(doc => this.mapToModule(doc)))
-    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => this.mapToModule({ ...doc.data(), id: doc.id }));
   }
 
   /**
    * Get enabled modules for a workspace
    */
-  getEnabledModules(workspaceId: string): Observable<Module[]> {
+  async getEnabledModules(workspaceId: string): Promise<Module[]> {
     const q = query(
       this.modulesCollection,
       where('workspaceId', '==', workspaceId),
@@ -59,80 +58,76 @@ export class ModuleFirestoreService implements ModuleRepository {
       orderBy('order', 'asc')
     );
     
-    return collectionData(q, { idField: 'id' }).pipe(
-      map(docs => docs.map(doc => this.mapToModule(doc)))
-    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => this.mapToModule({ ...doc.data(), id: doc.id }));
   }
 
   /**
    * Get a single module by ID
    */
-  getModuleById(moduleId: string): Observable<Module | null> {
+  async getModuleById(moduleId: string): Promise<Module | null> {
     const moduleDoc = doc(this.firestore, `modules/${moduleId}`);
-    return docData(moduleDoc, { idField: 'id' }).pipe(
-      map(doc => doc ? this.mapToModule(doc) : null)
-    );
+    const data = await firstValueFrom(docData(moduleDoc, { idField: 'id' }));
+    return data ? this.mapToModule(data) : null;
   }
 
   /**
    * Get a single module
    */
-  getModule(id: string): Observable<Module | null> {
+  async getModule(id: string): Promise<Module | null> {
     const moduleDoc = doc(this.firestore, `modules/${id}`);
-    return docData(moduleDoc, { idField: 'id' }).pipe(
-      map(doc => doc ? this.mapToModule(doc) : null)
-    );
+    const data = await firstValueFrom(docData(moduleDoc, { idField: 'id' }));
+    return data ? this.mapToModule(data) : null;
   }
 
   /**
    * Create a new module
    */
-  createModule(moduleData: Omit<Module, 'id'>): Observable<string> {
-    return from(addDoc(this.modulesCollection, moduleData)).pipe(
-      map(docRef => docRef.id)
-    );
+  async createModule(moduleData: Omit<Module, 'id'>): Promise<string> {
+    const docRef = await addDoc(this.modulesCollection, moduleData);
+    return docRef.id;
   }
 
   /**
    * Update a module
    */
-  updateModule(moduleId: string, data: Partial<Module>): Observable<void> {
+  async updateModule(moduleId: string, data: Partial<Module>): Promise<void> {
     const moduleDoc = doc(this.firestore, `modules/${moduleId}`);
-    return from(updateDoc(moduleDoc, data));
+    await updateDoc(moduleDoc, data);
   }
 
   /**
    * Delete a module
    */
-  deleteModule(moduleId: string): Observable<void> {
+  async deleteModule(moduleId: string): Promise<void> {
     const moduleDoc = doc(this.firestore, `modules/${moduleId}`);
-    return from(deleteDoc(moduleDoc));
+    await deleteDoc(moduleDoc);
   }
 
   /**
    * Update module order
    */
-  updateModuleOrder(workspaceId: string, orders: Array<{ id: string; order: number }>): Observable<void> {
+  async updateModuleOrder(workspaceId: string, orders: Array<{ id: string; order: number }>): Promise<void> {
     const updates = orders.map(({ id, order }) => {
       const moduleDoc = doc(this.firestore, `modules/${id}`);
       return updateDoc(moduleDoc, { order });
     });
 
-    return from(Promise.all(updates).then(() => undefined));
+    await Promise.all(updates);
   }
 
   /**
    * Toggle module enabled state
    */
-  toggleModuleEnabled(moduleId: string, enabled: boolean): Observable<void> {
+  async toggleModuleEnabled(moduleId: string, enabled: boolean): Promise<void> {
     const moduleDoc = doc(this.firestore, `modules/${moduleId}`);
-    return from(updateDoc(moduleDoc, { enabled }));
+    await updateDoc(moduleDoc, { enabled });
   }
 
   /**
    * Initialize default modules for a workspace
    */
-  initializeDefaultModules(workspaceId: string): Observable<Module[]> {
+  async initializeDefaultModules(workspaceId: string): Promise<Module[]> {
     const modules = DEFAULT_MODULES.map((metadata, index) => {
       const moduleData: Omit<Module, 'id'> = {
         workspaceId,
@@ -155,7 +150,7 @@ export class ModuleFirestoreService implements ModuleRepository {
       }))
     );
 
-    return from(Promise.all(createPromises));
+    return await Promise.all(createPromises);
   }
 
   /**
