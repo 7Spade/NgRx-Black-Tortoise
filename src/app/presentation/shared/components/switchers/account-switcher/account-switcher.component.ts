@@ -11,7 +11,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthStore } from '@application/auth/stores/auth.store';
 import { AccountStore } from '@application/account/stores/account.store';
 import { ContextStore } from '@application/context/stores/context.store';
-import { BREAKPOINTS } from '@shared/constants/breakpoints';
+import { BREAKPOINTS } from '@shared/constants/breakpoints.constant';
 import { Account } from '@domain/account';
 
 type AccountType = 'user' | 'organization' | 'bot' | 'team' | 'partner';

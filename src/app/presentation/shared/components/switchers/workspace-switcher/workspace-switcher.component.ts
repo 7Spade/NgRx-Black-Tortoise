@@ -14,7 +14,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { WorkspaceStore } from '@application/workspace/stores/workspace.store';
 import { ContextStore } from '@application/context/stores/context.store';
 import { Workspace } from '@domain/workspace';
-import { BREAKPOINTS } from '@shared/constants/breakpoints';
+import { BREAKPOINTS } from '@shared/constants/breakpoints.constant';
 
 /**
  * Workspace Switcher Component
