@@ -28,6 +28,10 @@ import { environment } from '../environments/environment';
 import {
   ACCOUNT_REPOSITORY,
   AUTH_REPOSITORY,
+  DOCUMENT_REPOSITORY,
+  MEMBER_REPOSITORY,
+  MODULE_REPOSITORY,
+  NOTIFICATION_REPOSITORY,
   ORGANIZATION_REPOSITORY,
   PARTNER_REPOSITORY,
   TASK_REPOSITORY,
@@ -36,6 +40,10 @@ import {
 } from '@application/tokens';
 import { AccountFirestoreService } from '@infrastructure/account/services/account.service';
 import { AuthService } from '@infrastructure/auth/services/auth.service';
+import { DocumentFirestoreService } from '@infrastructure/document';
+import { MemberFirestoreService } from '@infrastructure/member';
+import { ModuleFirestoreService } from '@infrastructure/module';
+import { NotificationFirestoreService } from '@infrastructure/notification';
 import { OrganizationService } from '@infrastructure/organization/services/organization.service';
 import { PartnerService } from '@infrastructure/partner/services/partner.service';
 import { TaskService } from '@infrastructure/tasks/services/task.service';
@@ -128,6 +136,10 @@ export const appConfig: ApplicationConfig = {
     // Domain repositories (composition root wiring)
     { provide: ACCOUNT_REPOSITORY, useClass: AccountFirestoreService },
     { provide: AUTH_REPOSITORY, useClass: AuthService },
+    { provide: DOCUMENT_REPOSITORY, useClass: DocumentFirestoreService },
+    { provide: MEMBER_REPOSITORY, useClass: MemberFirestoreService },
+    { provide: MODULE_REPOSITORY, useClass: ModuleFirestoreService },
+    { provide: NOTIFICATION_REPOSITORY, useClass: NotificationFirestoreService },
     { provide: ORGANIZATION_REPOSITORY, useClass: OrganizationService },
     { provide: PARTNER_REPOSITORY, useClass: PartnerService },
     { provide: TASK_REPOSITORY, useClass: TaskService },
