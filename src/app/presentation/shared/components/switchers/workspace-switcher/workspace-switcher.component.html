@@ -5,33 +5,50 @@
   [matMenuTriggerFor]="workspaceMenu"
   (menuOpened)="onMenuOpened()"
   (menuClosed)="onMenuClosed()"
+  role="button"
   aria-label="Switch workspace"
-  [attr.aria-expanded]="isMenuOpen()">
+  aria-haspopup="true"
+  [attr.aria-expanded]="isMenuOpen()"
+  [attr.aria-controls]="isMenuOpen() ? 'workspace-menu' : null">
   
   <!-- Workspace Icon -->
   <mat-icon class="workspace-icon">
     {{ currentWorkspace() ? getWorkspaceIcon(currentWorkspace()!) : 'workspace' }}
   </mat-icon>
   
-  <!-- Workspace Name -->
-  <span class="workspace-name">{{ currentWorkspaceName() }}</span>
+  <!-- Workspace Name (hidden on mobile/tablet) -->
+  @if (!isMobile() && !isTablet()) {
+    <span class="workspace-name">{{ currentWorkspaceName() }}</span>
+  }
   
-  <!-- Dropdown Icon -->
+  <!-- Dropdown Icon (hidden on mobile) -->
   @if (!workspaceStore.isLoading()) {
-    <mat-icon
-      class="dropdown-icon"
-      [class.rotated]="isMenuOpen()">
-      expand_more
-    </mat-icon>
+    @if (!isMobile()) {
+      <mat-icon
+        class="dropdown-icon"
+        [class.rotated]="isMenuOpen()">
+        expand_more
+      </mat-icon>
+    }
   } @else {
     <mat-spinner diameter="16" class="loading-spinner"></mat-spinner>
   }
 </button>
 
+<!-- Screen Reader Announcement Area -->
+<div
+  aria-live="polite"
+  aria-atomic="true"
+  class="sr-only">
+  {{ announceMessage() }}
+</div>
+
 <!-- Workspace Dropdown Menu -->
 <mat-menu
   #workspaceMenu="matMenu"
+  id="workspace-menu"
   class="workspace-menu"
+  role="menu"
   xPosition="before"
   yPosition="below">
   
@@ -68,7 +85,9 @@
         <button
           mat-menu-item
           class="workspace-item"
+          role="menuitem"
           [class.active]="isWorkspaceActive(workspace.id)"
+          [attr.aria-current]="isWorkspaceActive(workspace.id) ? 'true' : null"
           (click)="selectWorkspace(workspace)">
           
           <div class="workspace-item-content">
@@ -104,7 +123,9 @@
         <button
           mat-menu-item
           class="workspace-item"
+          role="menuitem"
           [class.active]="isWorkspaceActive(workspace.id)"
+          [attr.aria-current]="isWorkspaceActive(workspace.id) ? 'true' : null"
           (click)="selectWorkspace(workspace)">
           
           <div class="workspace-item-content">
@@ -139,6 +160,7 @@
   <button
     mat-menu-item
     class="create-workspace"
+    role="menuitem">
     (click)="createWorkspace()">
     <mat-icon>add</mat-icon>
     <span>Create new workspace</span>

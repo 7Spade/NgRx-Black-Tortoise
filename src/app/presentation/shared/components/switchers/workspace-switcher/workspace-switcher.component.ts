@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, DestroyRef, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
@@ -8,10 +8,13 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { FormsModule } from '@angular/forms';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { WorkspaceStore } from '@application/workspace/stores/workspace.store';
 import { ContextStore } from '@application/context/stores/context.store';
 import { Workspace } from '@domain/workspace';
+import { BREAKPOINTS } from '@shared/constants/breakpoints';
 
 /**
  * Workspace Switcher Component
@@ -20,6 +23,9 @@ import { Workspace } from '@domain/workspace';
  * - Search functionality
  * - Workspace grouping (recent, favorites, my workspaces)
  * - Create workspace option
+ * - Responsive design (desktop/tablet/mobile)
+ * - Accessibility (ARIA attributes, keyboard navigation)
+ * - Material Design 3 styling
  * 
  * Integrates with WorkspaceStore and ContextStore for state management.
  */
@@ -40,14 +46,23 @@ import { Workspace } from '@domain/workspace';
   templateUrl: './workspace-switcher.component.html',
   styleUrl: './workspace-switcher.component.scss'
 })
-export class WorkspaceSwitcherComponent {
+export class WorkspaceSwitcherComponent implements OnInit {
   // Stores
   protected workspaceStore = inject(WorkspaceStore);
   protected contextStore = inject(ContextStore);
+  private breakpointObserver = inject(BreakpointObserver);
+  private destroyRef = inject(DestroyRef);
+  
+  // Responsive states
+  protected isMobile = signal(false);
+  protected isTablet = signal(false);
   
   // Menu state
   protected isMenuOpen = signal(false);
   protected searchQuery = signal('');
+  
+  // Screen reader announcement
+  protected announceMessage = signal('');
   
   // Computed values
   protected currentWorkspace = computed(() => {
@@ -86,6 +101,40 @@ export class WorkspaceSwitcherComponent {
     return this.filteredWorkspaces();
   });
   
+  ngOnInit(): void {
+    // Detect mobile devices
+    this.breakpointObserver
+      .observe([BREAKPOINTS.mobile])
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(result => {
+        this.isMobile.set(result.matches);
+      });
+    
+    // Detect tablets
+    this.breakpointObserver
+      .observe([BREAKPOINTS.tablet])
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(result => {
+        this.isTablet.set(result.matches);
+      });
+  }
+  
+  /**
+   * Keyboard navigation handler
+   */
+  @HostListener('keydown', ['$event'])
+  onKeyDown(event: KeyboardEvent): void {
+    if (!this.isMenuOpen()) return;
+    
+    switch (event.key) {
+      case 'Escape':
+        // Close menu
+        this.isMenuOpen.set(false);
+        event.preventDefault();
+        break;
+    }
+  }
+  
   /**
    * Menu opened event handler
    */
@@ -109,6 +158,10 @@ export class WorkspaceSwitcherComponent {
     this.workspaceStore.setCurrentWorkspace(workspace);
     // TODO: Navigate to workspace or trigger workspace change event
     console.log('Selected workspace:', workspace.id);
+    
+    // Announce to screen readers
+    this.announceMessage.set(`Switched to workspace ${workspace.displayName || workspace.name}`);
+    setTimeout(() => this.announceMessage.set(''), 1000);
   }
   
   /**
