@@ -8,6 +8,7 @@ A modern Angular 20 application using zone-less change detection, @ngrx/signals 
 - ✅ **Angular 20**: Latest stable version with modern APIs
 - ✅ **@ngrx/signals**: Signal-based state management
 - ✅ **Firebase Integration**: @angular/fire with reactive patterns
+- ✅ **Material Design 3**: Angular Material + CDK theming and components
 - ✅ **Domain-Driven Design**: Account → Workspace → Module → Entity architecture
 - ✅ **Production Ready**: Stable APIs, comprehensive documentation
 
@@ -16,6 +17,7 @@ A modern Angular 20 application using zone-less change detection, @ngrx/signals 
 - **Framework**: Angular 20.0.0
 - **State Management**: @ngrx/signals 20.0.0
 - **Backend**: @angular/fire 20.0.0 (Firebase)
+- **UI**: Angular Material 20 + CDK (Material Design 3)
 - **Build Tool**: Angular CLI with esbuild
 - **Language**: TypeScript 5.8.0
 
@@ -116,22 +118,16 @@ npm run format
 ```
 src/
 ├── app/
-│   ├── app.component.ts           # Root component
-│   ├── app.config.ts              # Zone-less configuration
-│   ├── app.routes.ts              # Route definitions
-│   ├── core/                      # Core domain services
-│   │   ├── auth/                  # Authentication (Account)
-│   │   │   ├── stores/            # AuthStore (signals)
-│   │   │   ├── services/          # Auth services
-│   │   │   └── guards/            # Route guards
-│   │   ├── context/               # Context (Workspace)
-│   │   │   └── stores/            # ContextStore
-│   │   ├── services/              # App initialization
-│   │   └── ...                    # Other domains
-│   ├── features/                  # Feature modules
-│   │   ├── dashboard/             # Dashboard feature
-│   │   └── ...                    # Other features
-│   └── shared/                    # Shared components
+│   ├── app.config.ts              # Composition root (providers + routing)
+│   ├── presentation/              # UI components, layouts, features
+│   │   ├── app.component.ts       # Root component
+│   │   ├── app.routes.ts          # Route definitions
+│   │   ├── features/              # Feature modules
+│   │   └── shared/                # Presentation shared components
+│   ├── application/               # Stores, guards, app services
+│   ├── domain/                    # Entities, repository interfaces
+│   ├── infrastructure/            # Firebase implementations
+│   └── shared/                    # Shared utilities (no app logic)
 ├── environments/                  # Environment configs
 ├── main.ts                        # Zone-less bootstrap
 └── ...
