@@ -13,7 +13,7 @@
 import { signalStore, withState, withComputed, withMethods, withHooks, patchState } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { computed, effect, inject } from '@angular/core';
-import { pipe, switchMap, tap } from 'rxjs';
+import { pipe, switchMap, tap, from } from 'rxjs';
 import { tapResponse } from '@ngrx/operators';
 
 // Domain
@@ -108,7 +108,7 @@ export const NotificationStore = signalStore(
     markAsRead: rxMethod<string>(
       pipe(
         switchMap((notificationId) => 
-          notificationRepository.markAsRead(notificationId).pipe(
+          from(notificationRepository.markAsRead(notificationId)).pipe(
             tap(() => {
               // Update local state optimistically
               patchState(store, (state) => ({
@@ -132,7 +132,7 @@ export const NotificationStore = signalStore(
     markAllAsRead: rxMethod<string>(
       pipe(
         switchMap((userId) => 
-          notificationRepository.markAllAsRead(userId).pipe(
+          from(notificationRepository.markAllAsRead(userId)).pipe(
             tap(() => {
               // Update local state
               patchState(store, (state) => ({
@@ -158,7 +158,7 @@ export const NotificationStore = signalStore(
     deleteNotification: rxMethod<string>(
       pipe(
         switchMap((notificationId) => 
-          notificationRepository.deleteNotification(notificationId).pipe(
+          from(notificationRepository.deleteNotification(notificationId)).pipe(
             tap(() => {
               // Remove from local state
               patchState(store, (state) => ({

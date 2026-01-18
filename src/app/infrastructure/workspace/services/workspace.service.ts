@@ -11,13 +11,14 @@ import {
   query,
   where,
 } from '@angular/fire/firestore';
-import { Observable, from } from 'rxjs';
 import { Workspace } from '@domain/workspace';
 import { WorkspaceRepository } from '@domain/repositories';
 
 /**
- * WorkspaceService
- * Handles CRUD operations for workspaces
+ * WorkspaceService - Infrastructure implementation of WorkspaceRepository
+ * 
+ * Implements Promise-based methods for framework-agnostic domain layer.
+ * Handles CRUD operations for workspace documents in Firestore.
  */
 @Injectable({
   providedIn: 'root',
@@ -29,57 +30,51 @@ export class WorkspaceService implements WorkspaceRepository {
   /**
    * Get workspace by ID
    */
-  getWorkspace(id: string): Observable<Workspace | null> {
+  async getWorkspace(id: string): Promise<Workspace | null> {
     const docRef = doc(this.firestore, this.collectionName, id);
-    return from(
-      getDoc(docRef).then((snapshot) => {
-        if (snapshot.exists()) {
-          return { id: snapshot.id, ...snapshot.data() } as Workspace;
-        }
-        return null;
-      })
-    );
+    const snapshot = await getDoc(docRef);
+    
+    if (snapshot.exists()) {
+      return { id: snapshot.id, ...snapshot.data() } as Workspace;
+    }
+    return null;
   }
 
   /**
    * Get all workspaces for an organization
    */
-  getOrganizationWorkspaces(organizationId: string): Observable<Workspace[]> {
+  async getOrganizationWorkspaces(organizationId: string): Promise<Workspace[]> {
     const collectionRef = collection(this.firestore, this.collectionName);
     const q = query(collectionRef, where('organizationId', '==', organizationId));
     
-    return from(
-      getDocs(q).then((snapshot) => {
-        return snapshot.docs.map(
-          (doc) => ({ id: doc.id, ...doc.data() } as Workspace)
-        );
-      })
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(
+      (doc) => ({ id: doc.id, ...doc.data() } as Workspace)
     );
   }
 
   /**
    * Create a new workspace
    */
-  createWorkspace(workspace: Omit<Workspace, 'id'>): Observable<string> {
+  async createWorkspace(workspace: Omit<Workspace, 'id'>): Promise<string> {
     const docRef = doc(collection(this.firestore, this.collectionName));
-    return from(
-      setDoc(docRef, workspace).then(() => docRef.id)
-    );
+    await setDoc(docRef, workspace);
+    return docRef.id;
   }
 
   /**
    * Update an existing workspace
    */
-  updateWorkspace(id: string, data: Partial<Workspace>): Observable<void> {
+  async updateWorkspace(id: string, data: Partial<Workspace>): Promise<void> {
     const docRef = doc(this.firestore, this.collectionName, id);
-    return from(updateDoc(docRef, data));
+    await updateDoc(docRef, data);
   }
 
   /**
    * Delete a workspace
    */
-  deleteWorkspace(id: string): Observable<void> {
+  async deleteWorkspace(id: string): Promise<void> {
     const docRef = doc(this.firestore, this.collectionName, id);
-    return from(deleteDoc(docRef));
+    await deleteDoc(docRef);
   }
 }

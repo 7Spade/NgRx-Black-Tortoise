@@ -13,10 +13,10 @@ import {
   updateDoc,
   deleteDoc,
   serverTimestamp,
-  Timestamp
+  Timestamp,
+  getDocs
 } from '@angular/fire/firestore';
-import { Observable, from } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { firstValueFrom } from 'rxjs';
 
 // Domain
 import { Member, MemberRole, MemberStatus, MemberInvitation } from '@domain/member';
@@ -24,7 +24,7 @@ import { MemberRepository } from '@domain/repositories/member.repository.interfa
 
 /**
  * Firestore implementation of MemberRepository
- * Manages workspace members persistence
+ * Promise-based implementation for framework-agnostic domain layer
  */
 @Injectable({
   providedIn: 'root'
@@ -36,22 +36,21 @@ export class MemberFirestoreService implements MemberRepository {
   /**
    * Get all members for a workspace
    */
-  getWorkspaceMembers(workspaceId: string): Observable<Member[]> {
+  async getWorkspaceMembers(workspaceId: string): Promise<Member[]> {
     const q = query(
       this.membersCollection,
       where('workspaceId', '==', workspaceId),
       orderBy('joinedAt', 'desc')
     );
     
-    return collectionData(q, { idField: 'id' }).pipe(
-      map(docs => docs.map(doc => this.mapToMember(doc)))
-    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => this.mapToMember({ ...doc.data(), id: doc.id }));
   }
 
   /**
    * Get active members for a workspace
    */
-  getActiveMembers(workspaceId: string): Observable<Member[]> {
+  async getActiveMembers(workspaceId: string): Promise<Member[]> {
     const q = query(
       this.membersCollection,
       where('workspaceId', '==', workspaceId),
@@ -59,15 +58,14 @@ export class MemberFirestoreService implements MemberRepository {
       orderBy('joinedAt', 'desc')
     );
     
-    return collectionData(q, { idField: 'id' }).pipe(
-      map(docs => docs.map(doc => this.mapToMember(doc)))
-    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => this.mapToMember({ ...doc.data(), id: doc.id }));
   }
 
   /**
    * Get members by role
    */
-  getMembersByRole(workspaceId: string, role: MemberRole): Observable<Member[]> {
+  async getMembersByRole(workspaceId: string, role: MemberRole): Promise<Member[]> {
     const q = query(
       this.membersCollection,
       where('workspaceId', '==', workspaceId),
@@ -75,50 +73,47 @@ export class MemberFirestoreService implements MemberRepository {
       orderBy('joinedAt', 'desc')
     );
     
-    return collectionData(q, { idField: 'id' }).pipe(
-      map(docs => docs.map(doc => this.mapToMember(doc)))
-    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => this.mapToMember({ ...doc.data(), id: doc.id }));
   }
 
   /**
    * Get a single member by ID
    */
-  getMemberById(memberId: string): Observable<Member | null> {
+  async getMemberById(memberId: string): Promise<Member | null> {
     const memberDoc = doc(this.firestore, `members/${memberId}`);
-    return docData(memberDoc, { idField: 'id' }).pipe(
-      map(doc => doc ? this.mapToMember(doc) : null)
-    );
+    const data = await firstValueFrom(docData(memberDoc, { idField: 'id' }));
+    return data ? this.mapToMember(data) : null;
   }
 
   /**
    * Get member by user ID in workspace
    */
-  getMemberByUserId(workspaceId: string, userId: string): Observable<Member | null> {
+  async getMemberByUserId(workspaceId: string, userId: string): Promise<Member | null> {
     const q = query(
       this.membersCollection,
       where('workspaceId', '==', workspaceId),
       where('userId', '==', userId)
     );
     
-    return collectionData(q, { idField: 'id' }).pipe(
-      map(docs => docs.length > 0 ? this.mapToMember(docs[0]) : null)
-    );
+    const snapshot = await getDocs(q);
+    const docs = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    return docs.length > 0 ? this.mapToMember(docs[0]) : null;
   }
 
   /**
    * Get a single member
    */
-  getMember(id: string): Observable<Member | null> {
+  async getMember(id: string): Promise<Member | null> {
     const memberDoc = doc(this.firestore, `members/${id}`);
-    return docData(memberDoc, { idField: 'id' }).pipe(
-      map(data => data ? this.mapToMember(data) : null)
-    );
+    const data = await firstValueFrom(docData(memberDoc, { idField: 'id' }));
+    return data ? this.mapToMember(data) : null;
   }
 
   /**
    * Get member by account ID
    */
-  getMemberByAccountId(workspaceId: string, accountId: string): Observable<Member | null> {
+  async getMemberByAccountId(workspaceId: string, accountId: string): Promise<Member | null> {
     const q = query(
       this.membersCollection,
       where('workspaceId', '==', workspaceId),
@@ -126,81 +121,80 @@ export class MemberFirestoreService implements MemberRepository {
       limit(1)
     );
 
-    return collectionData(q, { idField: 'id' }).pipe(
-      map(members => members.length > 0 ? this.mapToMember(members[0]) : null)
-    );
+    const snapshot = await getDocs(q);
+    const members = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    return members.length > 0 ? this.mapToMember(members[0]) : null;
   }
 
   /**
    * Add a member to workspace
    */
-  addMember(memberData: Omit<Member, 'id'>): Observable<string> {
+  async addMember(memberData: Omit<Member, 'id'>): Promise<string> {
     const data = {
       ...memberData,
       joinedAt: memberData.joinedAt instanceof Date ? Timestamp.fromDate(memberData.joinedAt) : serverTimestamp()
     };
 
-    return from(addDoc(this.membersCollection, data)).pipe(
-      map(docRef => docRef.id)
-    );
+    const docRef = await addDoc(this.membersCollection, data);
+    return docRef.id;
   }
 
   /**
    * Update a member
    */
-  updateMember(memberId: string, data: Partial<Member>): Observable<void> {
+  async updateMember(memberId: string, data: Partial<Member>): Promise<void> {
     const memberDoc = doc(this.firestore, `members/${memberId}`);
     const updateData = {
       ...data,
       updatedAt: serverTimestamp()
     };
     
-    return from(updateDoc(memberDoc, updateData));
+    await updateDoc(memberDoc, updateData);
   }
 
   /**
    * Remove a member
    */
-  removeMember(memberId: string): Observable<void> {
+  async removeMember(memberId: string): Promise<void> {
     const memberDoc = doc(this.firestore, `members/${memberId}`);
-    return from(deleteDoc(memberDoc));
+    await deleteDoc(memberDoc);
   }
 
   /**
    * Update member role
    */
-  updateMemberRole(memberId: string, role: MemberRole): Observable<void> {
+  async updateMemberRole(memberId: string, role: MemberRole): Promise<void> {
     const memberDoc = doc(this.firestore, `members/${memberId}`);
-    return from(updateDoc(memberDoc, { 
+    await updateDoc(memberDoc, { 
       role,
       updatedAt: serverTimestamp()
-    }));
+    });
   }
 
   /**
    * Update member status
    */
-  updateMemberStatus(memberId: string, status: MemberStatus): Observable<void> {
+  async updateMemberStatus(memberId: string, status: MemberStatus): Promise<void> {
     const memberDoc = doc(this.firestore, `members/${memberId}`);
-    return from(updateDoc(memberDoc, { 
+    await updateDoc(memberDoc, { 
       status
-    }));
+    });
   }
 
   /**
    * Update last active time
    */
-  updateLastActive(memberId: string): Observable<void> {
+  async updateLastActive(memberId: string): Promise<void> {
     const memberDoc = doc(this.firestore, `members/${memberId}`);
-    return from(updateDoc(memberDoc, {
+    await updateDoc(memberDoc, {
       lastActiveAt: serverTimestamp()
-    }));
+    });
   }
 
   /**
    * Create member invitation
    */
-  createInvitation(invitationData: Omit<MemberInvitation, 'id'>): Observable<string> {
+  async createInvitation(invitationData: Omit<MemberInvitation, 'id'>): Promise<string> {
     const data = {
       ...invitationData,
       createdAt: serverTimestamp(),
@@ -209,43 +203,41 @@ export class MemberFirestoreService implements MemberRepository {
         : serverTimestamp()
     };
 
-    return from(addDoc(collection(this.firestore, 'invitations'), data)).pipe(
-      map(docRef => docRef.id)
-    );
+    const docRef = await addDoc(collection(this.firestore, 'invitations'), data);
+    return docRef.id;
   }
 
   /**
    * Get invitation by ID
    */
-  getInvitation(id: string): Observable<MemberInvitation | null> {
+  async getInvitation(id: string): Promise<MemberInvitation | null> {
     const invitationDoc = doc(this.firestore, `invitations/${id}`);
-    return docData(invitationDoc, { idField: 'id' }).pipe(
-      map(data => data ? this.mapToInvitation(data) : null)
-    );
+    const data = await firstValueFrom(docData(invitationDoc, { idField: 'id' }));
+    return data ? this.mapToInvitation(data) : null;
   }
 
   /**
    * Get invitation by token
    */
-  getInvitationByToken(token: string): Observable<MemberInvitation | null> {
+  async getInvitationByToken(token: string): Promise<MemberInvitation | null> {
     const q = query(
       collection(this.firestore, 'invitations'),
       where('token', '==', token),
       limit(1)
     );
 
-    return collectionData(q, { idField: 'id' }).pipe(
-      map(invitations => invitations.length > 0 ? this.mapToInvitation(invitations[0]) : null)
-    );
+    const snapshot = await getDocs(q);
+    const invitations = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    return invitations.length > 0 ? this.mapToInvitation(invitations[0]) : null;
   }
 
   /**
    * Update invitation status
    */
-  updateInvitationStatus(
+  async updateInvitationStatus(
     id: string, 
     status: 'accepted' | 'rejected' | 'expired'
-  ): Observable<void> {
+  ): Promise<void> {
     const invitationDoc = doc(this.firestore, `invitations/${id}`);
     const updateData: any = { status };
 
@@ -255,13 +247,13 @@ export class MemberFirestoreService implements MemberRepository {
       updateData.rejectedAt = serverTimestamp();
     }
 
-    return from(updateDoc(invitationDoc, updateData));
+    await updateDoc(invitationDoc, updateData);
   }
 
   /**
    * Get pending invitations for workspace
    */
-  getPendingInvitations(workspaceId: string): Observable<MemberInvitation[]> {
+  async getPendingInvitations(workspaceId: string): Promise<MemberInvitation[]> {
     const q = query(
       collection(this.firestore, 'invitations'),
       where('workspaceId', '==', workspaceId),
@@ -269,9 +261,8 @@ export class MemberFirestoreService implements MemberRepository {
       orderBy('createdAt', 'desc')
     );
 
-    return collectionData(q, { idField: 'id' }).pipe(
-      map(invitations => invitations.map(inv => this.mapToInvitation(inv)))
-    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => this.mapToInvitation({ ...doc.data(), id: doc.id }));
   }
 
   /**

@@ -3,23 +3,21 @@ import {
   Firestore,
   collection,
   doc,
-  docData,
-  collectionData,
   setDoc,
   updateDoc,
   deleteDoc,
   query,
   where,
   QueryConstraint,
+  getDocs,
+  getDoc
 } from '@angular/fire/firestore';
-import { Observable, from, of } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
 import { Organization } from '@domain/organization';
 import { OrganizationRepository } from '@domain/repositories';
 
 /**
  * OrganizationService
- * Handles CRUD operations for organizations using Firestore with reactive streams
+ * Promise-based implementation for framework-agnostic domain layer
  */
 @Injectable({
   providedIn: 'root',
@@ -29,33 +27,32 @@ export class OrganizationService implements OrganizationRepository {
   private collectionName = 'organizations';
 
   /**
-   * Get organization by ID - reactive stream that updates in real-time
+   * Get organization by ID
    */
-  getOrganization(id: string): Observable<Organization | null> {
+  async getOrganization(id: string): Promise<Organization | null> {
     const docRef = doc(this.firestore, this.collectionName, id);
-    return docData(docRef, { idField: 'id' }).pipe(
-      map((data) => (data ? ({ ...data, id } as Organization) : null)),
-      catchError(() => of(null))
-    );
+    const snapshot = await getDoc(docRef);
+    if (!snapshot.exists()) {
+      return null;
+    }
+    return { ...snapshot.data(), id } as Organization;
   }
 
   /**
-   * Get all organizations for a user - reactive stream
+   * Get all organizations for a user
    */
-  getUserOrganizations(userId: string): Observable<Organization[]> {
+  async getUserOrganizations(userId: string): Promise<Organization[]> {
     const collectionRef = collection(this.firestore, this.collectionName);
     const q = query(collectionRef, where('createdBy', '==', userId));
     
-    return collectionData(q, { idField: 'id' }).pipe(
-      map((data) => data as Organization[]),
-      catchError(() => of([]))
-    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }) as Organization);
   }
 
   /**
-   * List all organizations (with optional filters) - reactive stream
+   * List all organizations (with optional filters)
    */
-  list(filters: Record<string, unknown> = {}): Observable<Organization[]> {
+  async list(filters: Record<string, unknown> = {}): Promise<Organization[]> {
     const collectionRef = collection(this.firestore, this.collectionName);
     
     // Build query constraints from filters
@@ -68,35 +65,32 @@ export class OrganizationService implements OrganizationRepository {
     
     const q = constraints.length > 0 ? query(collectionRef, ...constraints) : collectionRef;
     
-    return collectionData(q, { idField: 'id' }).pipe(
-      map((data) => data as Organization[]),
-      catchError(() => of([]))
-    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }) as Organization);
   }
 
   /**
    * Create a new organization
    */
-  createOrganization(organization: Omit<Organization, 'id'>): Observable<string> {
+  async createOrganization(organization: Omit<Organization, 'id'>): Promise<string> {
     const docRef = doc(collection(this.firestore, this.collectionName));
-    return from(
-      setDoc(docRef, organization).then(() => docRef.id)
-    );
+    await setDoc(docRef, organization);
+    return docRef.id;
   }
 
   /**
    * Update an existing organization
    */
-  updateOrganization(id: string, data: Partial<Organization>): Observable<void> {
+  async updateOrganization(id: string, data: Partial<Organization>): Promise<void> {
     const docRef = doc(this.firestore, this.collectionName, id);
-    return from(updateDoc(docRef, data));
+    await updateDoc(docRef, data);
   }
 
   /**
    * Delete an organization
    */
-  deleteOrganization(id: string): Observable<void> {
+  async deleteOrganization(id: string): Promise<void> {
     const docRef = doc(this.firestore, this.collectionName, id);
-    return from(deleteDoc(docRef));
+    await deleteDoc(docRef);
   }
 }

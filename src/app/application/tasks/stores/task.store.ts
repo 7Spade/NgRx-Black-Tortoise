@@ -7,7 +7,7 @@
 import { computed, inject } from '@angular/core';
 import { patchState, signalStore, withComputed, withHooks, withMethods, withState } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { pipe, switchMap, tap, catchError, of } from 'rxjs';
+import { pipe, switchMap, tap, catchError, of, from } from 'rxjs';
 import { TASK_REPOSITORY } from '@application/tokens';
 import { initialTaskState } from './task.state';
 import { Task, TaskFilter, ViewMode, TaskTreeNode, GanttTaskData, TimelineEvent } from '@domain/tasks';
@@ -191,7 +191,7 @@ export const TaskStore = signalStore(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
         switchMap((workspaceId) =>
-          taskRepository.getTasks(workspaceId, store.filter()).pipe(
+          from(taskRepository.getTasks(workspaceId, store.filter())).pipe(
             tap((tasks) => patchState(store, { tasks, loading: false })),
             catchError((error) => {
               patchState(store, { error: error.message, loading: false });
@@ -208,7 +208,7 @@ export const TaskStore = signalStore(
     const loadWorkflows = rxMethod<string>(
       pipe(
         switchMap((workspaceId) =>
-          taskRepository.getWorkflows(workspaceId).pipe(
+          from(taskRepository.getWorkflows(workspaceId)).pipe(
             tap((workflows) => patchState(store, { workflows })),
             catchError(() => of([]))
           )
@@ -223,7 +223,7 @@ export const TaskStore = signalStore(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
         switchMap((task) =>
-          taskRepository.createTask(task).pipe(
+          from(taskRepository.createTask(task)).pipe(
             tap(() => patchState(store, { loading: false })),
             catchError((error) => {
               patchState(store, { error: error.message, loading: false });
@@ -241,7 +241,7 @@ export const TaskStore = signalStore(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
         switchMap(({ taskId, status }) =>
-          taskRepository.updateTaskStatus(taskId, status).pipe(
+          from(taskRepository.updateTaskStatus(taskId, status)).pipe(
             tap(() => patchState(store, { loading: false })),
             catchError((error) => {
               patchState(store, { error: error.message, loading: false });
@@ -259,7 +259,7 @@ export const TaskStore = signalStore(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
         switchMap(({ taskId, cascadeChildren }) =>
-          taskRepository.deleteTask(taskId, cascadeChildren).pipe(
+          from(taskRepository.deleteTask(taskId, cascadeChildren)).pipe(
             tap(() => patchState(store, { loading: false, selectedTask: null })),
             catchError((error) => {
               patchState(store, { error: error.message, loading: false });

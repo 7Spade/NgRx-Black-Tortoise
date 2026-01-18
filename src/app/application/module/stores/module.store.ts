@@ -13,7 +13,7 @@
 import { signalStore, withState, withComputed, withMethods, withHooks, patchState } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { computed, effect, inject } from '@angular/core';
-import { pipe, switchMap, tap, map } from 'rxjs';
+import { pipe, switchMap, tap, map, from } from 'rxjs';
 import { tapResponse } from '@ngrx/operators';
 
 // Domain
@@ -158,7 +158,7 @@ export const ModuleStore = signalStore(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
         switchMap(({ moduleId, enabled }) => 
-          moduleRepository.toggleModuleEnabled(moduleId, enabled).pipe(
+          from(moduleRepository.toggleModuleEnabled(moduleId, enabled)).pipe(
             map(() => ({ moduleId, enabled }))
           )
         ),

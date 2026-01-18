@@ -13,7 +13,7 @@
 import { signalStore, withState, withComputed, withMethods, withHooks, patchState } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { computed, effect, inject } from '@angular/core';
-import { pipe, switchMap, tap } from 'rxjs';
+import { pipe, switchMap, tap, from } from 'rxjs';
 import { tapResponse } from '@ngrx/operators';
 
 // Domain
@@ -155,7 +155,7 @@ export const DocumentStore = signalStore(
     updateDocument: rxMethod<{ documentId: string; data: Partial<Document> }>(
       pipe(
         switchMap(({ documentId, data }) => 
-          documentRepository.updateDocument(documentId, data).pipe(
+          from(documentRepository.updateDocument(documentId, data)).pipe(
             tap(() => {
               // Update local state optimistically
               patchState(store, (state) => ({
@@ -182,7 +182,7 @@ export const DocumentStore = signalStore(
     deleteDocument: rxMethod<{ documentId: string; deletedBy: string }>(
       pipe(
         switchMap(({ documentId, deletedBy }) => 
-          documentRepository.deleteDocument(documentId, deletedBy).pipe(
+          from(documentRepository.deleteDocument(documentId, deletedBy)).pipe(
             tap(() => {
               // Remove from local state
               patchState(store, (state) => ({
