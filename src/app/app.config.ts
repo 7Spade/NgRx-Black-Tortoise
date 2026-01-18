@@ -1,5 +1,6 @@
 import { ApplicationConfig, provideZonelessChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
+import { provideAnimations } from '@angular/platform-browser/animations';
 import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { getAuth, provideAuth } from '@angular/fire/auth';
 import { getFirestore, provideFirestore } from '@angular/fire/firestore';
@@ -22,8 +23,22 @@ import { getPerformance, providePerformance } from '@angular/fire/performance';
 import { getStorage, provideStorage } from '@angular/fire/storage';
 import { getRemoteConfig, provideRemoteConfig } from '@angular/fire/remote-config';
 import { getVertexAI, provideVertexAI } from '@angular/fire/vertexai';
-import { routes } from './app.routes';
+import { routes } from '@presentation/app.routes';
 import { environment } from '../environments/environment';
+import {
+  AUTH_REPOSITORY,
+  ORGANIZATION_REPOSITORY,
+  PARTNER_REPOSITORY,
+  TASK_REPOSITORY,
+  TEAM_REPOSITORY,
+  WORKSPACE_REPOSITORY,
+} from '@application/tokens';
+import { AuthService } from '@infrastructure/auth/services/auth.service';
+import { OrganizationService } from '@infrastructure/organization/services/organization.service';
+import { PartnerService } from '@infrastructure/partner/services/partner.service';
+import { TaskService } from '@infrastructure/tasks/services/task.service';
+import { TeamService } from '@infrastructure/team/services/team.service';
+import { WorkspaceService } from '@infrastructure/workspace/services/workspace.service';
 
 /**
  * Application Configuration with Zone-less Change Detection
@@ -62,6 +77,9 @@ export const appConfig: ApplicationConfig = {
     // This tells Angular to use signal-based change detection instead of Zone.js
     // Note: This is now a stable API in Angular 20+ (no longer experimental)
     provideZonelessChangeDetection(),
+
+    // Angular Material animations
+    provideAnimations(),
 
     // Router configuration
     provideRouter(routes),
@@ -104,6 +122,14 @@ export const appConfig: ApplicationConfig = {
     provideStorage(() => getStorage()),
     provideRemoteConfig(() => getRemoteConfig()),
     provideVertexAI(() => getVertexAI()),
+
+    // Domain repositories (composition root wiring)
+    { provide: AUTH_REPOSITORY, useClass: AuthService },
+    { provide: ORGANIZATION_REPOSITORY, useClass: OrganizationService },
+    { provide: PARTNER_REPOSITORY, useClass: PartnerService },
+    { provide: TASK_REPOSITORY, useClass: TaskService },
+    { provide: TEAM_REPOSITORY, useClass: TeamService },
+    { provide: WORKSPACE_REPOSITORY, useClass: WorkspaceService },
 
     /**
      * NOTE: APP_INITIALIZER is deprecated in Angular 20.

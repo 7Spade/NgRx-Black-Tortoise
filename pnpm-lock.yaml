@@ -4,9 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-overrides:
-  dataconnect-generated: link:C:/Users/122sp/AppData/Local/pnpm/global/5/node_modules/src/dataconnect-generated
-
 importers:
 
   .:
@@ -28,13 +25,13 @@ importers:
         version: 20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2)
       '@angular/fire':
         specifier: ~20.0.0
-        version: 20.0.1(d28799c3a6eb7260444bf3c3d69088fb)
+        version: 20.0.1(6u6rlhhokqgsmk4e4puafp2qme)
       '@angular/forms':
         specifier: ~20.0.0
         version: 20.0.7(@angular/common@20.0.7(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))(@angular/platform-browser@20.0.7(@angular/animations@20.0.7(@angular/common@20.0.7(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2)))(@angular/common@20.0.7(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2)))(rxjs@7.8.2)
       '@angular/material':
         specifier: ~20.0.0
-        version: 20.0.6(a81f22e1a6d0ade306e4686ef8234cf6)
+        version: 20.0.6(i2srqepw5x7l2lhi7p46622xk4)
       '@angular/platform-browser':
         specifier: ~20.0.0
         version: 20.0.7(@angular/animations@20.0.7(@angular/common@20.0.7(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2)))(@angular/common@20.0.7(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))
@@ -44,18 +41,9 @@ importers:
       '@angular/router':
         specifier: ~20.0.0
         version: 20.0.7(@angular/common@20.0.7(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))(@angular/platform-browser@20.0.7(@angular/animations@20.0.7(@angular/common@20.0.7(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2)))(@angular/common@20.0.7(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2)))(rxjs@7.8.2)
-      '@ngrx/operators':
-        specifier: ~20.0.0
-        version: 20.0.1(rxjs@7.8.2)
       '@ngrx/signals':
         specifier: ~20.0.0
         version: 20.0.1(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))(rxjs@7.8.2)
-      '@tanstack-query-firebase/angular':
-        specifier: ^1.0.0
-        version: 1.0.2(3f0f2ad49b5e9740eea33943031e2da1)
-      '@tanstack/angular-query-experimental':
-        specifier: 5.66.4
-        version: 5.66.4(@angular/common@20.0.7(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))
       rxjs:
         specifier: ~7.8.2
         version: 7.8.2
@@ -1310,11 +1298,6 @@ packages:
     resolution: {integrity: sha512-xJIPs+bYuc9ASBl+cvGsKbGrJmS6fAKaSZCnT0lhahT5rhA2VVy9/EcIgd2JhtEuFOJNx7UHNn/qiTPTY4nrQw==}
     engines: {node: '>= 10'}
 
-  '@ngrx/operators@20.0.1':
-    resolution: {integrity: sha512-IIaVUlPU2LB1FbZ2m4/4FmAZnTEDCDgC115naods4SHo6U+DU7ZzItfIGDLeEPDaHa8MnjVJwOtrXjy73eJcNg==}
-    peerDependencies:
-      rxjs: ^6.5.3 || ^7.4.0
-
   '@ngrx/signals@20.0.1':
     resolution: {integrity: sha512-7YYPH4nTkmLEgibJnwi527toEm3tsnlCzp5AzT9osS8JxN9cHxkG6iQ7fzhw9N4bTt+8wyUZb7PF0YLFYD2RHA==}
     peerDependencies:
@@ -1733,27 +1716,6 @@ packages:
   '@sigstore/verify@2.1.1':
     resolution: {integrity: sha512-hVJD77oT67aowHxwT4+M6PGOp+E2LtLdTK3+FC0lBO9T7sYwItDMXZ7Z07IDCvR1M717a4axbIWckrW67KMP/w==}
     engines: {node: ^18.17.0 || >=20.5.0}
-
-  '@tanstack-query-firebase/angular@1.0.2':
-    resolution: {integrity: sha512-kJd4UoL8t3zA3W0Q7z2HWX2TGBvaoG6TFOfcDbKPX3f55Hap9GbhFr9NhJZGszT3hLIWcPVXHCHJnjfMAK3C8Q==}
-    peerDependencies:
-      '@angular/common': ^19.0.0
-      '@angular/core': ^19.0.0
-      '@angular/fire': ^19.0.0
-      '@angular/platform-browser-dynamic': ^19.0.0
-      '@tanstack/angular-query-experimental': 5.66.4
-
-  '@tanstack/angular-query-experimental@5.66.4':
-    resolution: {integrity: sha512-MELhfZLKCNMyHvAna8qFZFW5CLRpJ87qjj+e8PB1H/tbtqi9d2oWKUw6KC+XkRRVh2kauvtsyn3HBTKr063B3w==}
-    peerDependencies:
-      '@angular/common': '>=16.0.0'
-      '@angular/core': '>=16.0.0'
-
-  '@tanstack/query-core@5.66.4':
-    resolution: {integrity: sha512-skM/gzNX4shPkqmdTCSoHtJAPMTtmIJNS0hE+xwTTUVYwezArCT34NMermABmBVUg5Ls5aiUXEDXfqwR1oVkcA==}
-
-  '@tanstack/query-devtools@5.65.0':
-    resolution: {integrity: sha512-g5y7zc07U9D3esMdqUfTEVu9kMHoIaVBsD0+M3LPdAdD710RpTcLiNvJY1JkYXqkq9+NV+CQoemVNpQPBXVsJg==}
 
   '@tufjs/canonical-json@2.0.0':
     resolution: {integrity: sha512-yVtV8zsdo8qFHe+/3kw81dSLyF7D576A5cCFCi4X7B39tWT7SekaEFUnvnWJHz+9qO7qJTah1JbrDjWKqFtdWA==}
@@ -3268,7 +3230,7 @@ snapshots:
     optionalDependencies:
       '@angular/compiler': 20.0.7
 
-  '@angular/fire@20.0.1(d28799c3a6eb7260444bf3c3d69088fb)':
+  '@angular/fire@20.0.1(6u6rlhhokqgsmk4e4puafp2qme)':
     dependencies:
       '@angular-devkit/schematics': 20.3.14(chokidar@4.0.3)
       '@angular/common': 20.0.7(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))(rxjs@7.8.2)
@@ -3292,7 +3254,7 @@ snapshots:
       rxjs: 7.8.2
       tslib: 2.8.1
 
-  '@angular/material@20.0.6(a81f22e1a6d0ade306e4686ef8234cf6)':
+  '@angular/material@20.0.6(i2srqepw5x7l2lhi7p46622xk4)':
     dependencies:
       '@angular/cdk': 20.0.6(@angular/common@20.0.7(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))(rxjs@7.8.2)
       '@angular/common': 20.0.7(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))(rxjs@7.8.2)
@@ -4324,11 +4286,6 @@ snapshots:
       '@napi-rs/nice-win32-x64-msvc': 1.1.1
     optional: true
 
-  '@ngrx/operators@20.0.1(rxjs@7.8.2)':
-    dependencies:
-      rxjs: 7.8.2
-      tslib: 2.8.1
-
   '@ngrx/signals@20.0.1(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))(rxjs@7.8.2)':
     dependencies:
       '@angular/core': 20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2)
@@ -4664,25 +4621,6 @@ snapshots:
       '@sigstore/bundle': 3.1.0
       '@sigstore/core': 2.0.0
       '@sigstore/protobuf-specs': 0.4.3
-
-  '@tanstack-query-firebase/angular@1.0.2(3f0f2ad49b5e9740eea33943031e2da1)':
-    dependencies:
-      '@angular/common': 20.0.7(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))(rxjs@7.8.2)
-      '@angular/core': 20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2)
-      '@angular/fire': 20.0.1(d28799c3a6eb7260444bf3c3d69088fb)
-      '@angular/platform-browser-dynamic': 20.0.7(@angular/common@20.0.7(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/compiler@20.0.7)(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))(@angular/platform-browser@20.0.7(@angular/animations@20.0.7(@angular/common@20.0.7(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2)))(@angular/common@20.0.7(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2)))
-      '@tanstack/angular-query-experimental': 5.66.4(@angular/common@20.0.7(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))
-
-  '@tanstack/angular-query-experimental@5.66.4(@angular/common@20.0.7(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))':
-    dependencies:
-      '@angular/common': 20.0.7(@angular/core@20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2))(rxjs@7.8.2)
-      '@angular/core': 20.0.7(@angular/compiler@20.0.7)(rxjs@7.8.2)
-      '@tanstack/query-core': 5.66.4
-      '@tanstack/query-devtools': 5.65.0
-
-  '@tanstack/query-core@5.66.4': {}
-
-  '@tanstack/query-devtools@5.65.0': {}
 
   '@tufjs/canonical-json@2.0.0': {}
 
