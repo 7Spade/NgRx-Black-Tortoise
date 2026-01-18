@@ -3,6 +3,7 @@
  * 
  * Infrastructure layer implementation for account persistence in Firestore.
  * Handles CRUD operations for account documents.
+ * Implements Promise-based methods for framework-agnostic domain layer.
  */
 import { Injectable, inject } from '@angular/core';
 import {
@@ -19,7 +20,6 @@ import {
   serverTimestamp,
   Timestamp,
 } from '@angular/fire/firestore';
-import { Observable, from, map, catchError, throwError } from 'rxjs';
 import { Account } from '@domain/account';
 import { AccountRepository } from '@domain/repositories';
 
@@ -33,7 +33,7 @@ export class AccountFirestoreService implements AccountRepository {
   /**
    * Create a new account document in Firestore
    */
-  createAccount(account: Omit<Account, 'createdAt' | 'updatedAt'>): Observable<Account> {
+  async createAccount(account: Omit<Account, 'createdAt' | 'updatedAt'>): Promise<Account> {
     const accountRef = doc(this.accountsCollection, account.id);
     
     const accountData = {
@@ -42,37 +42,35 @@ export class AccountFirestoreService implements AccountRepository {
       updatedAt: serverTimestamp(),
     };
 
-    return from(setDoc(accountRef, accountData)).pipe(
-      map(() => ({
+    try {
+      await setDoc(accountRef, accountData);
+      return {
         ...account,
         createdAt: new Date(),
         updatedAt: new Date(),
-      } as Account)),
-      catchError((error) => {
-        console.error('Error creating account:', error);
-        return throwError(() => new Error('Failed to create account'));
-      })
-    );
+      } as Account;
+    } catch (error) {
+      console.error('Error creating account:', error);
+      throw new Error('Failed to create account');
+    }
   }
 
   /**
    * Get account by ID
    */
-  getAccountById(id: string): Observable<Account | null> {
+  async getAccountById(id: string): Promise<Account | null> {
     const accountRef = doc(this.accountsCollection, id);
     
-    return from(getDoc(accountRef)).pipe(
-      map((docSnap) => {
-        if (!docSnap.exists()) {
-          return null;
-        }
-        return this.convertFirestoreDoc(docSnap.data(), id);
-      }),
-      catchError((error) => {
-        console.error('Error getting account:', error);
-        return throwError(() => new Error('Failed to get account'));
-      })
-    );
+    try {
+      const docSnap = await getDoc(accountRef);
+      if (!docSnap.exists()) {
+        return null;
+      }
+      return this.convertFirestoreDoc(docSnap.data(), id);
+    } catch (error) {
+      console.error('Error getting account:', error);
+      throw new Error('Failed to get account');
+    }
   }
 
   /**
@@ -80,28 +78,26 @@ export class AccountFirestoreService implements AccountRepository {
    * For now, returns only the user's personal account
    * TODO: Add organization/team/partner accounts when those relationships are implemented
    */
-  getAccountsByUserId(userId: string): Observable<Account[]> {
+  async getAccountsByUserId(userId: string): Promise<Account[]> {
     const q = query(this.accountsCollection, where('id', '==', userId));
     
-    return from(getDocs(q)).pipe(
-      map((querySnapshot) => {
-        const accounts: Account[] = [];
-        querySnapshot.forEach((doc) => {
-          accounts.push(this.convertFirestoreDoc(doc.data(), doc.id));
-        });
-        return accounts;
-      }),
-      catchError((error) => {
-        console.error('Error getting accounts:', error);
-        return throwError(() => new Error('Failed to get accounts'));
-      })
-    );
+    try {
+      const querySnapshot = await getDocs(q);
+      const accounts: Account[] = [];
+      querySnapshot.forEach((doc) => {
+        accounts.push(this.convertFirestoreDoc(doc.data(), doc.id));
+      });
+      return accounts;
+    } catch (error) {
+      console.error('Error getting accounts:', error);
+      throw new Error('Failed to get accounts');
+    }
   }
 
   /**
    * Update account data
    */
-  updateAccount(id: string, updates: Partial<Account>): Observable<Account> {
+  async updateAccount(id: string, updates: Partial<Account>): Promise<Account> {
     const accountRef = doc(this.accountsCollection, id);
     
     const updateData = {
@@ -109,31 +105,31 @@ export class AccountFirestoreService implements AccountRepository {
       updatedAt: serverTimestamp(),
     };
 
-    return from(updateDoc(accountRef, updateData)).pipe(
-      map(() => ({
+    try {
+      await updateDoc(accountRef, updateData);
+      return {
         id,
         ...updates,
         updatedAt: new Date(),
-      } as Account)),
-      catchError((error) => {
-        console.error('Error updating account:', error);
-        return throwError(() => new Error('Failed to update account'));
-      })
-    );
+      } as Account;
+    } catch (error) {
+      console.error('Error updating account:', error);
+      throw new Error('Failed to update account');
+    }
   }
 
   /**
    * Delete account
    */
-  deleteAccount(id: string): Observable<void> {
+  async deleteAccount(id: string): Promise<void> {
     const accountRef = doc(this.accountsCollection, id);
     
-    return from(deleteDoc(accountRef)).pipe(
-      catchError((error) => {
-        console.error('Error deleting account:', error);
-        return throwError(() => new Error('Failed to delete account'));
-      })
-    );
+    try {
+      await deleteDoc(accountRef);
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      throw new Error('Failed to delete account');
+    }
   }
 
   /**
