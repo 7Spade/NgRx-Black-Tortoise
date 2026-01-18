@@ -5,25 +5,39 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatIconModule } from '@angular/material/icon';
 import { AuthStore } from '@application/auth/stores/auth.store';
 import { ContextStore } from '@application/context/stores/context.store';
 import { MenuService } from '@application/services/menu.service';
 import { AvatarService } from '@shared/services/avatar.service';
 import { MenuItem } from '@shared/models/menu.model';
+import { AccountSwitcherComponent } from '../switchers/account-switcher/account-switcher.component';
+import { WorkspaceSwitcherComponent } from '../switchers/workspace-switcher/workspace-switcher.component';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, MatToolbarModule, MatButtonModule, MatMenuModule, MatDividerModule],
+  imports: [
+    CommonModule,
+    MatToolbarModule,
+    MatButtonModule,
+    MatMenuModule,
+    MatDividerModule,
+    MatIconModule,
+    AccountSwitcherComponent,
+    WorkspaceSwitcherComponent
+  ],
   template: `
     <mat-toolbar class="header">
       <div class="header-content">
         <div class="logo">
           <span class="logo-icon" aria-hidden="true">🔥</span>
-          <span class="logo-text">{{ contextStore.currentContextName() || 'Signal Store App' }}</span>
-          @if (contextStore.currentContextType()) {
-            <span class="context-badge">{{ getContextTypeBadge() }}</span>
-          }
+          <span class="logo-text">NgRx Black Tortoise</span>
+        </div>
+
+        <div class="switchers">
+          <app-workspace-switcher />
+          <app-account-switcher />
         </div>
 
         <span class="spacer"></span>
@@ -111,6 +125,13 @@ import { MenuItem } from '@shared/models/menu.model';
       display: flex;
       align-items: center;
       gap: 16px;
+    }
+
+    .switchers {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: 16px;
     }
 
     .spacer {
@@ -259,6 +280,10 @@ import { MenuItem } from '@shared/models/menu.model';
       .user-email-short {
         display: none;
       }
+      
+      .switchers {
+        display: none;
+      }
     }
   `],
 })
@@ -279,22 +304,6 @@ export class HeaderComponent {
     const email = this.authStore.user()?.email || '';
     const maxLength = 20;
     return email.length > maxLength ? email.substring(0, maxLength) + '...' : email;
-  }
-
-  getContextTypeBadge(): string {
-    const type = this.contextStore.currentContextType();
-    switch (type) {
-      case 'organization':
-        return 'ORG';
-      case 'team':
-        return 'TEAM';
-      case 'partner':
-        return 'PARTNER';
-      case 'user':
-        return 'USER';
-      default:
-        return '';
-    }
   }
 
   handleMenuItem(item: MenuItem): void {

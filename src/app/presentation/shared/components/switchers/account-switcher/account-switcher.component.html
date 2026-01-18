@@ -1,0 +1,129 @@
+<!-- Account Switcher Trigger Button -->
+<button
+  mat-button
+  class="account-trigger"
+  [matMenuTriggerFor]="accountMenu"
+  (menuOpened)="onMenuOpened()"
+  (menuClosed)="onMenuClosed()"
+  aria-label="Switch account"
+  [attr.aria-expanded]="isMenuOpen()">
+  
+  <!-- Avatar Container -->
+  <div class="avatar-container">
+    @if (avatarUrl(); as avatar) {
+      <img
+        [src]="avatar"
+        [alt]="displayName()"
+        class="avatar"
+        loading="lazy">
+    } @else {
+      <mat-icon class="avatar-icon">
+        {{ getAccountTypeIcon(currentAccountType()) }}
+      </mat-icon>
+    }
+    
+    <!-- Account Type Badge -->
+    @if (currentAccountType() !== 'user') {
+      <span
+        class="badge"
+        [attr.data-type]="currentAccountType()">
+      </span>
+    }
+  </div>
+  
+  <!-- Account Name -->
+  <span class="account-name">{{ displayName() }}</span>
+  
+  <!-- Dropdown Icon -->
+  @if (!authStore.isLoading()) {
+    <mat-icon
+      class="dropdown-icon"
+      [class.rotated]="isMenuOpen()">
+      expand_more
+    </mat-icon>
+  } @else {
+    <mat-spinner diameter="16" class="loading-spinner"></mat-spinner>
+  }
+</button>
+
+<!-- Account Dropdown Menu -->
+<mat-menu
+  #accountMenu="matMenu"
+  class="account-menu"
+  xPosition="before"
+  yPosition="below">
+  
+  <!-- Personal Account Section -->
+  <div class="menu-section">
+    <div class="section-title">Personal Account</div>
+    
+    <button
+      mat-menu-item
+      class="account-item"
+      [class.active]="currentAccountType() === 'user'">
+      
+      <div class="account-item-content">
+        <!-- Left: Avatar -->
+        <div class="item-avatar">
+          @if (avatarUrl(); as avatar) {
+            <img [src]="avatar" [alt]="displayName()">
+          } @else {
+            <mat-icon>person</mat-icon>
+          }
+        </div>
+        
+        <!-- Center: Info -->
+        <div class="item-info">
+          <div class="item-name">{{ displayName() }}</div>
+          <div class="item-meta">User</div>
+        </div>
+        
+        <!-- Right: Check Icon -->
+        @if (currentAccountType() === 'user') {
+          <mat-icon class="check-icon">check</mat-icon>
+        }
+      </div>
+    </button>
+  </div>
+  
+  <mat-divider></mat-divider>
+  
+  <!-- Organizations Section -->
+  <div class="menu-section">
+    <div class="section-title">Organizations</div>
+    
+    <div class="empty-state">
+      No organizations yet
+    </div>
+  </div>
+  
+  <mat-divider></mat-divider>
+  
+  <!-- Teams Section -->
+  <div class="menu-section">
+    <div class="section-title">Teams</div>
+    
+    <div class="empty-state">
+      No teams yet
+    </div>
+  </div>
+  
+  <mat-divider></mat-divider>
+  
+  <!-- Partners Section -->
+  <div class="menu-section">
+    <div class="section-title">Partners</div>
+    
+    <div class="empty-state">
+      No partner relationships yet
+    </div>
+  </div>
+  
+  <mat-divider></mat-divider>
+  
+  <!-- Manage Accounts Option -->
+  <button mat-menu-item class="manage-accounts">
+    <mat-icon>settings</mat-icon>
+    <span>Manage accounts...</span>
+  </button>
+</mat-menu>

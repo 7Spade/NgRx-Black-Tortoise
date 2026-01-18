@@ -1,0 +1,146 @@
+<!-- Workspace Switcher Trigger Button -->
+<button
+  mat-button
+  class="workspace-trigger"
+  [matMenuTriggerFor]="workspaceMenu"
+  (menuOpened)="onMenuOpened()"
+  (menuClosed)="onMenuClosed()"
+  aria-label="Switch workspace"
+  [attr.aria-expanded]="isMenuOpen()">
+  
+  <!-- Workspace Icon -->
+  <mat-icon class="workspace-icon">
+    {{ currentWorkspace() ? getWorkspaceIcon(currentWorkspace()!) : 'workspace' }}
+  </mat-icon>
+  
+  <!-- Workspace Name -->
+  <span class="workspace-name">{{ currentWorkspaceName() }}</span>
+  
+  <!-- Dropdown Icon -->
+  @if (!workspaceStore.isLoading()) {
+    <mat-icon
+      class="dropdown-icon"
+      [class.rotated]="isMenuOpen()">
+      expand_more
+    </mat-icon>
+  } @else {
+    <mat-spinner diameter="16" class="loading-spinner"></mat-spinner>
+  }
+</button>
+
+<!-- Workspace Dropdown Menu -->
+<mat-menu
+  #workspaceMenu="matMenu"
+  class="workspace-menu"
+  xPosition="before"
+  yPosition="below">
+  
+  <!-- Search Bar -->
+  <div class="search-container" (click)="$event.stopPropagation()">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-icon matPrefix>search</mat-icon>
+      <input
+        matInput
+        placeholder="Search workspaces..."
+        [(ngModel)]="searchQuery"
+        (ngModelChange)="searchQuery.set($event)"
+        autocomplete="off">
+      @if (searchQuery()) {
+        <button
+          matSuffix
+          mat-icon-button
+          aria-label="Clear search"
+          (click)="searchQuery.set('')">
+          <mat-icon>close</mat-icon>
+        </button>
+      }
+    </mat-form-field>
+  </div>
+  
+  <mat-divider></mat-divider>
+  
+  <!-- Recent Workspaces -->
+  @if (recentWorkspaces().length > 0 && !searchQuery()) {
+    <div class="menu-section">
+      <div class="section-title">Recent</div>
+      
+      @for (workspace of recentWorkspaces(); track workspace.id) {
+        <button
+          mat-menu-item
+          class="workspace-item"
+          [class.active]="isWorkspaceActive(workspace.id)"
+          (click)="selectWorkspace(workspace)">
+          
+          <div class="workspace-item-content">
+            <!-- Icon -->
+            <mat-icon class="item-icon">{{ getWorkspaceIcon(workspace) }}</mat-icon>
+            
+            <!-- Info -->
+            <div class="item-info">
+              <div class="item-name">{{ workspace.displayName || workspace.name }}</div>
+              @if (workspace.description) {
+                <div class="item-meta">{{ workspace.description }}</div>
+              }
+            </div>
+            
+            <!-- Check Icon -->
+            @if (isWorkspaceActive(workspace.id)) {
+              <mat-icon class="check-icon">check</mat-icon>
+            }
+          </div>
+        </button>
+      }
+    </div>
+    
+    <mat-divider></mat-divider>
+  }
+  
+  <!-- My Workspaces -->
+  <div class="menu-section">
+    <div class="section-title">{{ searchQuery() ? 'Search Results' : 'My Workspaces' }}</div>
+    
+    @if (myWorkspaces().length > 0) {
+      @for (workspace of myWorkspaces(); track workspace.id) {
+        <button
+          mat-menu-item
+          class="workspace-item"
+          [class.active]="isWorkspaceActive(workspace.id)"
+          (click)="selectWorkspace(workspace)">
+          
+          <div class="workspace-item-content">
+            <!-- Icon -->
+            <mat-icon class="item-icon">{{ getWorkspaceIcon(workspace) }}</mat-icon>
+            
+            <!-- Info -->
+            <div class="item-info">
+              <div class="item-name">{{ workspace.displayName || workspace.name }}</div>
+              @if (workspace.description) {
+                <div class="item-meta">{{ workspace.description }}</div>
+              }
+            </div>
+            
+            <!-- Check Icon -->
+            @if (isWorkspaceActive(workspace.id)) {
+              <mat-icon class="check-icon">check</mat-icon>
+            }
+          </div>
+        </button>
+      }
+    } @else {
+      <div class="empty-state">
+        {{ searchQuery() ? 'No workspaces found' : 'No workspaces available' }}
+      </div>
+    }
+  </div>
+  
+  <mat-divider></mat-divider>
+  
+  <!-- Create Workspace Option -->
+  <button
+    mat-menu-item
+    class="create-workspace"
+    (click)="createWorkspace()">
+    <mat-icon>add</mat-icon>
+    <span>Create new workspace</span>
+  </button>
+</mat-menu>
