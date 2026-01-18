@@ -69,28 +69,41 @@ export class AccountSwitcherComponent implements OnInit {
   // Screen reader announcement
   protected announceMessage = signal('');
   
-  // Computed values - use AccountStore for account data
-  protected displayName = computed(() => {
+  // ✅ SINGLE VIEWMODEL RULE: One computed ViewModel for entire component
+  // This prevents signal-induced DOM rebuilds and menu flashing
+  protected viewModel = computed(() => {
     const currentAccount = this.accountStore.currentAccount();
-    if (!currentAccount) {
-      const user = this.authStore.user();
-      return user?.displayName || user?.email || 'Not logged in';
-    }
+    const user = this.authStore.user();
+    const isLoading = this.authStore.isLoading();
+    const personalAccount = this.accountStore.personalAccount();
+    const organizationAccounts = this.accountStore.organizationAccounts();
+    const teamAccounts = this.accountStore.teamAccounts();
+    const partnerAccounts = this.accountStore.partnerAccounts();
     
-    return currentAccount.displayName || currentAccount.email || 'User';
-  });
-  
-  protected avatarUrl = computed(() => {
-    const currentAccount = this.accountStore.currentAccount();
-    return currentAccount?.photoURL || null;
-  });
-  
-  protected currentAccountType = computed((): AccountType => {
-    const currentAccount = this.accountStore.currentAccount();
-    if (currentAccount) {
-      return currentAccount.type as AccountType;
-    }
-    return 'user';
+    // Derive display name
+    const displayName = currentAccount?.displayName || currentAccount?.email || 
+                       user?.displayName || user?.email || 'Not logged in';
+    
+    // Derive avatar URL
+    const avatarUrl = currentAccount?.photoURL || null;
+    
+    // Derive current account type
+    const currentAccountType: AccountType = currentAccount?.type as AccountType || 'user';
+    
+    // Derive current account ID for active state checks
+    const currentAccountId = currentAccount?.id || null;
+    
+    return {
+      displayName,
+      avatarUrl,
+      currentAccountType,
+      currentAccountId,
+      isLoading,
+      personalAccount,
+      organizationAccounts,
+      teamAccounts,
+      partnerAccounts,
+    };
   });
   
   ngOnInit(): void {
