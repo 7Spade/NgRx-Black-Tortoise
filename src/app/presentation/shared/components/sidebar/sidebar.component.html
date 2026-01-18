@@ -1,0 +1,64 @@
+<aside
+  class="sidebar"
+  [class.collapsed]="collapsed()"
+  [class.pinned]="pinned()"
+  role="navigation"
+  aria-label="Module navigation"
+>
+  <!-- Sidebar header -->
+  <div class="sidebar-header">
+    @if (!collapsed()) {
+      <h2 class="sidebar-title">Modules</h2>
+    }
+    
+    <div class="sidebar-controls">
+      <button
+        mat-icon-button
+        (click)="togglePinned()"
+        [matTooltip]="pinned() ? 'Unpin sidebar' : 'Pin sidebar'"
+        matTooltipPosition="right"
+        class="pin-button"
+        aria-label="Toggle sidebar pin"
+      >
+        <mat-icon>{{ pinned() ? 'push_pin' : 'push_pin' }}</mat-icon>
+      </button>
+      
+      <button
+        mat-icon-button
+        (click)="toggleCollapsed()"
+        [matTooltip]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+        matTooltipPosition="right"
+        class="toggle-button"
+        aria-label="Toggle sidebar"
+      >
+        <mat-icon>{{ collapsed() ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <mat-divider />
+
+  <!-- Modules list -->
+  <div
+    class="modules-list"
+    cdkDropList
+    (cdkDropListDropped)="onModulesDrop($event)"
+  >
+    @for (module of modules(); track module.id) {
+      <app-module-item
+        [module]="module"
+        [active]="isModuleActive(module)"
+        [collapsed]="collapsed()"
+        (click)="onModuleClick(module)"
+        cdkDrag
+      />
+    } @empty {
+      @if (!collapsed()) {
+        <div class="empty-state">
+          <mat-icon>dashboard</mat-icon>
+          <p>No modules</p>
+        </div>
+      }
+    }
+  </div>
+</aside>
