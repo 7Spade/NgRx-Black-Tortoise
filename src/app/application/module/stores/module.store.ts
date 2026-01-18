@@ -13,7 +13,7 @@
 import { signalStore, withState, withComputed, withMethods, withHooks, patchState } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { computed, effect, inject } from '@angular/core';
-import { pipe, switchMap, tap } from 'rxjs';
+import { pipe, switchMap, tap, map } from 'rxjs';
 import { tapResponse } from '@ngrx/operators';
 
 // Domain
@@ -118,9 +118,12 @@ export const ModuleStore = signalStore(
     loadEnabledModules: rxMethod<string>(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
-        switchMap((workspaceId) => moduleRepository.getEnabledModules(workspaceId)),
+        switchMap((workspaceId) => moduleRepository.getWorkspaceModules(workspaceId)),
         tapResponse({
-          next: (modules) => patchState(store, { modules, loading: false }),
+          next: (allModules: Module[]) => patchState(store, { 
+            modules: allModules.filter(m => m.enabled), 
+            loading: false 
+          }),
           error: (error: Error) => patchState(store, { 
             error: error.message, 
             loading: false 
@@ -155,10 +158,12 @@ export const ModuleStore = signalStore(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
         switchMap(({ moduleId, enabled }) => 
-          moduleRepository.toggleModuleEnabled(moduleId, enabled)
+          moduleRepository.toggleModuleEnabled(moduleId, enabled).pipe(
+            map(() => ({ moduleId, enabled }))
+          )
         ),
         tapResponse({
-          next: () => {
+          next: ({ moduleId, enabled }) => {
             // Update local state optimistically
             patchState(store, (state) => ({
               modules: state.modules.map(m => 
@@ -179,11 +184,23 @@ export const ModuleStore = signalStore(
      * Update local module badge
      */
     updateModuleBadge(moduleId: string, badge: Module['badge']) {
-      patchState(store, (state) => ({
-        modules: state.modules.map(m => 
-          m.id === moduleId ? { ...m, badge } : m
-        )
-      }));
+      patchState(store, (state) => {
+        const updatedModules = state.modules.map(m => {
+          if (m.id === moduleId) {
+            const updated: Module = { ...m };
+            if (badge !== undefined) {
+              updated.badge = badge;
+            }
+            return updated;
+          }
+          return m;
+        });
+        
+        return {
+          ...state,
+          modules: updatedModules
+        };
+      });
     },
     
     /**

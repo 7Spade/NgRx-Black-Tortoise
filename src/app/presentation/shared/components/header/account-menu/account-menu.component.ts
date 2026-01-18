@@ -61,6 +61,7 @@ export class AccountMenuComponent {
   // User initials for avatar fallback
   initials = computed(() => {
     const name = this.displayName();
+    if (!name) return '??';
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   });
 
@@ -84,6 +85,6 @@ export class AccountMenuComponent {
    * Sign out the current user
    */
   signOut(): void {
-    this.authStore.signOut();
+    this.authStore.logout();
   }
 }

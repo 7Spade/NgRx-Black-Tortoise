@@ -2,7 +2,7 @@
  * ModuleRepository contract for module data access.
  */
 import { Observable } from 'rxjs';
-import { Module, ModuleConfig, ModuleType } from '../module/entities/module.entity';
+import { Module, ModuleType } from '../module/entities/module.entity';
 
 export interface ModuleRepository {
   /**

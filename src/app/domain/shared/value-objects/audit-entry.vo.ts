@@ -132,17 +132,31 @@ export class AuditEntry {
       actorId,
       actorName,
       actorEmail,
-      actorIP: options?.actorIP,
-      actorUserAgent: options?.actorUserAgent,
       resourceType,
       resourceId,
-      resourceName: options?.resourceName,
-      changes: options?.changes,
-      metadata: options?.metadata,
       timestamp: new Date(),
-      description,
-      details: options?.details
+      description
     };
+    
+    // Add optional fields only if they exist
+    if (options?.actorIP !== undefined) {
+      data.actorIP = options.actorIP;
+    }
+    if (options?.actorUserAgent !== undefined) {
+      data.actorUserAgent = options.actorUserAgent;
+    }
+    if (options?.resourceName !== undefined) {
+      data.resourceName = options.resourceName;
+    }
+    if (options?.changes !== undefined) {
+      data.changes = options.changes;
+    }
+    if (options?.metadata !== undefined) {
+      data.metadata = options.metadata;
+    }
+    if (options?.details !== undefined) {
+      data.details = options.details;
+    }
 
     return new AuditEntry(data);
   }

@@ -8,6 +8,7 @@ import {
   query,
   where,
   orderBy,
+  limit,
   addDoc,
   updateDoc,
   deleteDoc,
@@ -18,7 +19,7 @@ import { Observable, from } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 // Domain
-import { Member, MemberRole, MemberStatus } from '@domain/member';
+import { Member, MemberRole, MemberStatus, MemberInvitation } from '@domain/member';
 import { MemberRepository } from '@domain/repositories/member.repository.interface';
 
 /**
@@ -105,22 +106,42 @@ export class MemberFirestoreService implements MemberRepository {
   }
 
   /**
+   * Get a single member
+   */
+  getMember(id: string): Observable<Member | null> {
+    const memberDoc = doc(this.firestore, `members/${id}`);
+    return docData(memberDoc, { idField: 'id' }).pipe(
+      map(data => data ? this.mapToMember(data) : null)
+    );
+  }
+
+  /**
+   * Get member by account ID
+   */
+  getMemberByAccountId(workspaceId: string, accountId: string): Observable<Member | null> {
+    const q = query(
+      this.membersCollection,
+      where('workspaceId', '==', workspaceId),
+      where('accountId', '==', accountId),
+      limit(1)
+    );
+
+    return collectionData(q, { idField: 'id' }).pipe(
+      map(members => members.length > 0 ? this.mapToMember(members[0]) : null)
+    );
+  }
+
+  /**
    * Add a member to workspace
    */
-  addMember(memberData: Omit<Member, 'id' | 'joinedAt' | 'updatedAt'>): Observable<Member> {
+  addMember(memberData: Omit<Member, 'id'>): Observable<string> {
     const data = {
       ...memberData,
-      joinedAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+      joinedAt: memberData.joinedAt instanceof Date ? Timestamp.fromDate(memberData.joinedAt) : serverTimestamp()
     };
 
     return from(addDoc(this.membersCollection, data)).pipe(
-      map(docRef => ({
-        ...memberData,
-        id: docRef.id,
-        joinedAt: new Date(),
-        updatedAt: new Date()
-      }))
+      map(docRef => docRef.id)
     );
   }
 
@@ -162,9 +183,95 @@ export class MemberFirestoreService implements MemberRepository {
   updateMemberStatus(memberId: string, status: MemberStatus): Observable<void> {
     const memberDoc = doc(this.firestore, `members/${memberId}`);
     return from(updateDoc(memberDoc, { 
-      status,
-      updatedAt: serverTimestamp()
+      status
     }));
+  }
+
+  /**
+   * Update last active time
+   */
+  updateLastActive(memberId: string): Observable<void> {
+    const memberDoc = doc(this.firestore, `members/${memberId}`);
+    return from(updateDoc(memberDoc, {
+      lastActiveAt: serverTimestamp()
+    }));
+  }
+
+  /**
+   * Create member invitation
+   */
+  createInvitation(invitationData: Omit<MemberInvitation, 'id'>): Observable<string> {
+    const data = {
+      ...invitationData,
+      createdAt: serverTimestamp(),
+      expiresAt: invitationData['expiresAt'] instanceof Date 
+        ? Timestamp.fromDate(invitationData['expiresAt'] as Date) 
+        : serverTimestamp()
+    };
+
+    return from(addDoc(collection(this.firestore, 'invitations'), data)).pipe(
+      map(docRef => docRef.id)
+    );
+  }
+
+  /**
+   * Get invitation by ID
+   */
+  getInvitation(id: string): Observable<MemberInvitation | null> {
+    const invitationDoc = doc(this.firestore, `invitations/${id}`);
+    return docData(invitationDoc, { idField: 'id' }).pipe(
+      map(data => data ? this.mapToInvitation(data) : null)
+    );
+  }
+
+  /**
+   * Get invitation by token
+   */
+  getInvitationByToken(token: string): Observable<MemberInvitation | null> {
+    const q = query(
+      collection(this.firestore, 'invitations'),
+      where('token', '==', token),
+      limit(1)
+    );
+
+    return collectionData(q, { idField: 'id' }).pipe(
+      map(invitations => invitations.length > 0 ? this.mapToInvitation(invitations[0]) : null)
+    );
+  }
+
+  /**
+   * Update invitation status
+   */
+  updateInvitationStatus(
+    id: string, 
+    status: 'accepted' | 'rejected' | 'expired'
+  ): Observable<void> {
+    const invitationDoc = doc(this.firestore, `invitations/${id}`);
+    const updateData: any = { status };
+
+    if (status === 'accepted') {
+      updateData.acceptedAt = serverTimestamp();
+    } else if (status === 'rejected') {
+      updateData.rejectedAt = serverTimestamp();
+    }
+
+    return from(updateDoc(invitationDoc, updateData));
+  }
+
+  /**
+   * Get pending invitations for workspace
+   */
+  getPendingInvitations(workspaceId: string): Observable<MemberInvitation[]> {
+    const q = query(
+      collection(this.firestore, 'invitations'),
+      where('workspaceId', '==', workspaceId),
+      where('status', '==', 'pending'),
+      orderBy('createdAt', 'desc')
+    );
+
+    return collectionData(q, { idField: 'id' }).pipe(
+      map(invitations => invitations.map(inv => this.mapToInvitation(inv)))
+    );
   }
 
   /**
@@ -174,23 +281,42 @@ export class MemberFirestoreService implements MemberRepository {
     return {
       id: doc.id,
       workspaceId: doc.workspaceId,
-      userId: doc.userId,
+      accountId: doc.accountId,
       email: doc.email,
       displayName: doc.displayName ?? '',
       photoURL: doc.photoURL,
       role: doc.role as MemberRole,
       status: doc.status as MemberStatus,
-      permissions: doc.permissions ?? [],
-      invitation: doc.invitation ?? null,
-      lastActiveAt: doc.lastActiveAt instanceof Timestamp 
-        ? doc.lastActiveAt.toDate() 
-        : doc.lastActiveAt ? new Date(doc.lastActiveAt) : null,
+      customPermissions: doc.customPermissions ?? [],
       joinedAt: doc.joinedAt instanceof Timestamp 
         ? doc.joinedAt.toDate() 
         : new Date(doc.joinedAt),
-      updatedAt: doc.updatedAt instanceof Timestamp 
-        ? doc.updatedAt.toDate() 
-        : new Date(doc.updatedAt)
+      lastActiveAt: doc.lastActiveAt instanceof Timestamp 
+        ? doc.lastActiveAt.toDate() 
+        : doc.lastActiveAt ? new Date(doc.lastActiveAt) : undefined,
+      invitedBy: doc.invitedBy,
+      bio: doc.bio,
+      title: doc.title,
+      department: doc.department
+    };
+  }
+
+  /**
+   * Map Firestore document to MemberInvitation entity
+   */
+  private mapToInvitation(doc: any): MemberInvitation {
+    return {
+      id: doc.id,
+      workspaceId: doc.workspaceId,
+      email: doc.email,
+      role: doc.role as MemberRole,
+      status: doc.status,
+      token: doc.token,
+      expiresAt: doc.expiresAt instanceof Timestamp ? doc.expiresAt.toDate() : new Date(doc.expiresAt),
+      createdAt: doc.createdAt instanceof Timestamp ? doc.createdAt.toDate() : new Date(doc.createdAt),
+      createdBy: doc.createdBy,
+      acceptedAt: doc.acceptedAt instanceof Timestamp ? doc.acceptedAt.toDate() : undefined,
+      rejectedAt: doc.rejectedAt instanceof Timestamp ? doc.rejectedAt.toDate() : undefined
     };
   }
 }

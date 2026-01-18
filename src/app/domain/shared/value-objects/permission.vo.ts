@@ -1,4 +1,4 @@
-import { MemberRole } from '../member/entities/member.entity';
+import { MemberRole } from '../../member/entities/member.entity';
 
 /**
  * 權限類型
@@ -160,7 +160,7 @@ export function hasPermission(
 ): boolean {
   // 檢查角色預設權限
   const rolePermissions = ROLE_PERMISSIONS[role];
-  if (rolePermissions.includes(permission)) {
+  if (rolePermissions && rolePermissions.includes(permission)) {
     return true;
   }
   
@@ -179,15 +179,16 @@ export function getRolePermissions(
   role: MemberRole,
   customPermissions?: string[]
 ): PermissionType[] {
-  const rolePermissions = [...ROLE_PERMISSIONS[role]];
+  const rolePermissions = ROLE_PERMISSIONS[role];
+  const permissions = rolePermissions ? [...rolePermissions] : [];
   
   if (customPermissions) {
     customPermissions.forEach(permission => {
-      if (!rolePermissions.includes(permission as PermissionType)) {
-        rolePermissions.push(permission as PermissionType);
+      if (!permissions.includes(permission as PermissionType)) {
+        permissions.push(permission as PermissionType);
       }
     });
   }
   
-  return rolePermissions;
+  return permissions;
 }

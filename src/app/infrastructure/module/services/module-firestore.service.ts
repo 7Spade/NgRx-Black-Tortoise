@@ -19,7 +19,7 @@ import { Observable, from } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 // Domain
-import { Module, ModuleType } from '@domain/module';
+import { Module, ModuleType, DEFAULT_MODULES } from '@domain/module';
 import { ModuleRepository } from '@domain/repositories/module.repository.interface';
 
 /**
@@ -75,22 +75,21 @@ export class ModuleFirestoreService implements ModuleRepository {
   }
 
   /**
+   * Get a single module
+   */
+  getModule(id: string): Observable<Module | null> {
+    const moduleDoc = doc(this.firestore, `modules/${id}`);
+    return docData(moduleDoc, { idField: 'id' }).pipe(
+      map(doc => doc ? this.mapToModule(doc) : null)
+    );
+  }
+
+  /**
    * Create a new module
    */
-  createModule(moduleData: Omit<Module, 'id' | 'createdAt' | 'updatedAt'>): Observable<Module> {
-    const data = {
-      ...moduleData,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    };
-
-    return from(addDoc(this.modulesCollection, data)).pipe(
-      map(docRef => ({
-        ...moduleData,
-        id: docRef.id,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }))
+  createModule(moduleData: Omit<Module, 'id'>): Observable<string> {
+    return from(addDoc(this.modulesCollection, moduleData)).pipe(
+      map(docRef => docRef.id)
     );
   }
 
@@ -99,12 +98,7 @@ export class ModuleFirestoreService implements ModuleRepository {
    */
   updateModule(moduleId: string, data: Partial<Module>): Observable<void> {
     const moduleDoc = doc(this.firestore, `modules/${moduleId}`);
-    const updateData = {
-      ...data,
-      updatedAt: serverTimestamp()
-    };
-    
-    return from(updateDoc(moduleDoc, updateData));
+    return from(updateDoc(moduleDoc, data));
   }
 
   /**
@@ -121,10 +115,7 @@ export class ModuleFirestoreService implements ModuleRepository {
   updateModuleOrder(workspaceId: string, orders: Array<{ id: string; order: number }>): Observable<void> {
     const updates = orders.map(({ id, order }) => {
       const moduleDoc = doc(this.firestore, `modules/${id}`);
-      return updateDoc(moduleDoc, { 
-        order,
-        updatedAt: serverTimestamp()
-      });
+      return updateDoc(moduleDoc, { order });
     });
 
     return from(Promise.all(updates).then(() => undefined));
@@ -135,10 +126,36 @@ export class ModuleFirestoreService implements ModuleRepository {
    */
   toggleModuleEnabled(moduleId: string, enabled: boolean): Observable<void> {
     const moduleDoc = doc(this.firestore, `modules/${moduleId}`);
-    return from(updateDoc(moduleDoc, { 
-      enabled,
-      updatedAt: serverTimestamp()
-    }));
+    return from(updateDoc(moduleDoc, { enabled }));
+  }
+
+  /**
+   * Initialize default modules for a workspace
+   */
+  initializeDefaultModules(workspaceId: string): Observable<Module[]> {
+    const modules = DEFAULT_MODULES.map((metadata, index) => {
+      const moduleData: Omit<Module, 'id'> = {
+        workspaceId,
+        type: metadata.type,
+        name: metadata.defaultName,
+        description: metadata.description,
+        icon: metadata.defaultIcon,
+        route: `/workspace/${workspaceId}/${metadata.type}`,
+        order: metadata.defaultOrder,
+        enabled: metadata.defaultEnabled,
+        visible: true
+      };
+      return moduleData;
+    });
+
+    const createPromises = modules.map(module => 
+      addDoc(this.modulesCollection, module).then(docRef => ({
+        ...module,
+        id: docRef.id
+      }))
+    );
+
+    return from(Promise.all(createPromises));
   }
 
   /**
@@ -150,18 +167,14 @@ export class ModuleFirestoreService implements ModuleRepository {
       workspaceId: doc.workspaceId,
       type: doc.type as ModuleType,
       name: doc.name,
+      description: doc.description,
       icon: doc.icon,
       route: doc.route,
-      enabled: doc.enabled ?? true,
       order: doc.order ?? 0,
-      badge: doc.badge ?? null,
-      metadata: doc.metadata ?? {},
-      createdAt: doc.createdAt instanceof Timestamp 
-        ? doc.createdAt.toDate() 
-        : new Date(doc.createdAt),
-      updatedAt: doc.updatedAt instanceof Timestamp 
-        ? doc.updatedAt.toDate() 
-        : new Date(doc.updatedAt)
+      enabled: doc.enabled ?? true,
+      visible: doc.visible ?? true,
+      requiredPermission: doc.requiredPermission,
+      badge: doc.badge
     };
   }
 }

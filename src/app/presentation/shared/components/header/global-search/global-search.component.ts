@@ -42,7 +42,7 @@ export class GlobalSearchComponent {
 
   // Responsive visibility
   private isHandsetOrTablet = toSignal(
-    this.breakpointObserver.observe([BREAKPOINTS.HANDSET, BREAKPOINTS.TABLET])
+    this.breakpointObserver.observe([`(max-width: ${BREAKPOINTS.TABLET_MAX}px)`])
       .pipe(map(result => result.matches)),
     { initialValue: false }
   );

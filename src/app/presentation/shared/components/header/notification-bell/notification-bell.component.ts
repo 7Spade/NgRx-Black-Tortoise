@@ -7,6 +7,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatListModule } from '@angular/material/list';
 import { MatDividerModule } from '@angular/material/divider';
 import { NotificationStore } from '@application/notification/stores/notification.store';
+import { AuthStore } from '@application/auth/stores/auth.store';
 
 /**
  * Notification Bell Component
@@ -38,6 +39,7 @@ import { NotificationStore } from '@application/notification/stores/notification
 })
 export class NotificationBellComponent {
   private notificationStore = inject(NotificationStore);
+  private authStore = inject(AuthStore);
 
   // Notification counts
   unreadCount = this.notificationStore.unreadCount;
@@ -59,7 +61,10 @@ export class NotificationBellComponent {
    * Mark all notifications as read
    */
   markAllAsRead(): void {
-    this.notificationStore.markAllAsRead();
+    const user = this.authStore.user();
+    if (user) {
+      this.notificationStore.markAllAsRead(user.uid);
+    }
   }
 
   /**

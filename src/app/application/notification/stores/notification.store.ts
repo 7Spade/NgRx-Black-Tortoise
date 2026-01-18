@@ -68,18 +68,20 @@ export const NotificationStore = signalStore(
     ),
     
     /**
-     * Get notifications by type
+     * Get notifications filtered by specific type
      */
-    getByType: (type: NotificationType) => computed(() =>
-      notifications().filter(n => n.type === type)
-    ),
+    notificationsByType: computed(() => {
+      const notifs = notifications();
+      return (type: NotificationType) => notifs.filter(n => n.type === type);
+    }),
     
     /**
-     * Get workspace notifications
+     * Get notifications for specific workspace
      */
-    workspaceNotifications: (workspaceId: string) => computed(() =>
-      notifications().filter(n => n.workspaceId === workspaceId)
-    )
+    notificationsByWorkspace: computed(() => {
+      const notifs = notifications();
+      return (workspaceId: string) => notifs.filter(n => n.workspaceId === workspaceId);
+    })
   })),
   
   withMethods((store, notificationRepository = inject(NOTIFICATION_REPOSITORY)) => ({
@@ -180,7 +182,7 @@ export const NotificationStore = signalStore(
         const user = authStore.user();
         
         if (user) {
-          store.loadNotifications(user.uid);
+          store.loadNotifications(user.id);
         } else {
           patchState(store, initialState);
         }
