@@ -23,11 +23,12 @@ import {
   PARTNER_REPOSITORY,
   TEAM_REPOSITORY,
 } from '@application/tokens';
+import { EventBusService } from '@shared/services/event-bus.service';
 
 export const ContextStore = signalStore(
   { providedIn: 'root' },
   withState(initialContextState),
-  withComputed(({ current, available }) => ({
+  withComputed(({ current, available, currentWorkspaceId }) => ({
     currentContextType: computed(() => current()?.type || null),
     currentContextId: computed(() => {
       const ctx = current();
@@ -70,6 +71,7 @@ export const ContextStore = signalStore(
         avail.partners.length > 0
       );
     }),
+    hasWorkspace: computed(() => currentWorkspaceId() !== null),
   })),
   withMethods((store, authStore = inject(AuthStore)) => ({
     switchContext(context: AppContext): void {
@@ -90,6 +92,17 @@ export const ContextStore = signalStore(
         current: context,
         history: [...store.history(), event],
       });
+    },
+    /**
+     * Switch active workspace within current context
+     * This is the SINGLE source of truth for workspace switching
+     */
+    switchWorkspace(workspaceId: string | null): void {
+      patchState(store, { currentWorkspaceId: workspaceId });
+      
+      // Note: WorkspaceStore and ModuleStore should react to this signal change
+      // via effects, NOT through direct method calls
+      console.log('[ContextStore] Workspace switched:', workspaceId);
     },
     setAvailableOrganizations(organizations: OrganizationContext[]): void {
       patchState(store, (state) => ({

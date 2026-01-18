@@ -8,4 +8,5 @@ export const initialContextState: ContextState = {
     partners: [],
   },
   history: [],
+  currentWorkspaceId: null,
 };
