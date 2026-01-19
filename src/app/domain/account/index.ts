@@ -1,14 +1,25 @@
 /**
  * Account domain exports.
  * 
- * Re-exports canonical type definitions from shared/types/ddd-types-reference.ts
- * to maintain backward compatibility with existing imports.
+ * IDENTITY LAYER
+ * ==============
+ * Account identities (User, Organization, Bot) can authenticate and have credentials.
+ * Only User and Organization can own workspaces.
  * 
- * SINGLE SOURCE OF TRUTH: All account-related types are defined in ddd-types-reference.ts
+ * ENTITIES LIVE HERE: src/app/domain/account/entities/
+ * - user.entity.ts
+ * - organization.entity.ts  
+ * - bot.entity.ts
  * 
- * IMPORTANT: There is NO "AccountType" export.
- * Use IdentityType | MembershipType inline when handling both layers.
+ * TYPE DEFINITIONS: src/app/domain/shared/types/ddd-types-reference.ts
+ * Contains comprehensive type definitions and type guards.
  */
+
+// Export concrete entity implementations
+export * from './entities';
+
+// Re-export canonical type definitions from shared/types/ddd-types-reference.ts
+// for backward compatibility and centralized type management
 export type {
   // Core Account Union
   Account,
@@ -16,12 +27,34 @@ export type {
   // Identity Layer Types
   IdentityType,
   MembershipType,
-  WorkspaceOwnerType
+  WorkspaceOwnerType,
+  
+  // Identity Interfaces
+  UserIdentity,
+  OrganizationIdentity,
+  BotIdentity,
+  
+  // Identity Union
+  Identity,
+  
+  // Workspace Ownership
+  WorkspaceOwnership,
+  UserOwnedWorkspace,
+  OrganizationOwnedWorkspace,
+  Workspace
 } from '../shared/types/ddd-types-reference';
 
 export {
   // Type Guards
   canOwnWorkspace,
   isIdentityType,
-  isMembershipType
+  isMembershipType,
+  isUserIdentity,
+  isOrganizationIdentity,
+  isBotIdentity,
+  isUserOwnedWorkspace,
+  isOrganizationOwnedWorkspace,
+  
+  // Validation Helpers
+  ValidationHelpers
 } from '../shared/types/ddd-types-reference';

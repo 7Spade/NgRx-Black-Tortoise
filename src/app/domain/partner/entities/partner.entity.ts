@@ -116,6 +116,17 @@ export interface Partner {
 }
 
 /**
+ * ⚠️ MEMBERSHIP LAYER (Relationship only, NON-identity)
+ * =====================================================
+ * Partner is a membership grouping construct.
+ * Partner is NOT an identity type.
+ * Partner CANNOT authenticate.
+ * Partner CANNOT own workspaces.
+ * 
+ * Rule: If it only groups users → Membership.
+ */
+
+/**
  * Partner creation data
  * Used when creating a new partner relationship
  */

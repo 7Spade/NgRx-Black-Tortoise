@@ -17,7 +17,7 @@ import { computed, inject } from '@angular/core';
 import { pipe, switchMap, tap, catchError, of } from 'rxjs';
 import { tapResponse } from '@ngrx/operators';
 import { initialOrganizationState } from './organization.state';
-import { Organization } from '@domain/organization';
+import { Organization } from '@domain/account';
 import { ORGANIZATION_REPOSITORY } from '@application/tokens';
 import { AuthStore } from '@application/auth/stores/auth.store';
 

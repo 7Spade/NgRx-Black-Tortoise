@@ -124,6 +124,15 @@ export interface Bot {
 }
 
 /**
+ * Bot Identity
+ * Minimal bot representation for account switcher UI
+ * Extends Bot with type discriminator
+ */
+export interface BotIdentity extends Bot {
+  readonly type: 'bot';
+}
+
+/**
  * Bot creation data
  * Used when creating a new bot
  */

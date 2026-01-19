@@ -82,6 +82,17 @@ export interface Team {
 }
 
 /**
+ * ⚠️ MEMBERSHIP LAYER (Relationship only, NON-identity)
+ * =====================================================
+ * Team is a membership grouping construct.
+ * Team is NOT an identity type.
+ * Team CANNOT authenticate.
+ * Team CANNOT own workspaces.
+ * 
+ * Rule: If it only groups users → Membership.
+ */
+
+/**
  * Team creation data
  * Used when creating a new team
  */
