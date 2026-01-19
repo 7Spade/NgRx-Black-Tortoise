@@ -13,7 +13,7 @@
 import { signalStore, withState, withComputed, withMethods, withHooks, patchState } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { computed, effect, inject } from '@angular/core';
-import { pipe, switchMap, tap } from 'rxjs';
+import { pipe, switchMap, tap, from } from 'rxjs';
 import { tapResponse } from '@ngrx/operators';
 
 // Domain
@@ -147,7 +147,7 @@ export const MemberStore = signalStore(
     updateMemberRole: rxMethod<{ memberId: string; role: MemberRole }>(
       pipe(
         switchMap(({ memberId, role }) => 
-          memberRepository.updateMemberRole(memberId, role).pipe(
+          from(memberRepository.updateMemberRole(memberId, role)).pipe(
             tap(() => {
               // Update local state optimistically
               patchState(store, (state) => ({
@@ -174,7 +174,7 @@ export const MemberStore = signalStore(
     updateMemberStatus: rxMethod<{ memberId: string; status: MemberStatus }>(
       pipe(
         switchMap(({ memberId, status }) => 
-          memberRepository.updateMemberStatus(memberId, status).pipe(
+          from(memberRepository.updateMemberStatus(memberId, status)).pipe(
             tap(() => {
               // Update local state optimistically
               patchState(store, (state) => ({
@@ -201,7 +201,7 @@ export const MemberStore = signalStore(
     removeMember: rxMethod<string>(
       pipe(
         switchMap((memberId) => 
-          memberRepository.removeMember(memberId).pipe(
+          from(memberRepository.removeMember(memberId)).pipe(
             tap(() => {
               // Remove from local state
               patchState(store, (state) => ({

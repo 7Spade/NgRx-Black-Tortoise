@@ -8,7 +8,7 @@ import {
 } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { computed, inject } from '@angular/core';
-import { pipe, switchMap, tap, catchError, of } from 'rxjs';
+import { pipe, switchMap, tap, catchError, of, from } from 'rxjs';
 import { initialAuthState } from './auth.state';
 import { AUTH_REPOSITORY } from '@application/tokens';
 import { AuthUser } from '@domain/account';
@@ -29,7 +29,7 @@ type AuthState = typeof initialAuthState;
  * 
  * Reactive Patterns:
  * 1. User interactions call methods (login, logout, etc.)
- * 2. Methods trigger rxMethod effects
+ * 2. Methods trigger rxMethod effects (Promises wrapped in from())
  * 3. Effects update state via patchState (signal modification)
  * 4. Signal updates automatically trigger UI updates in zone-less mode
  * 5. Computed signals derive additional state reactively
@@ -41,6 +41,7 @@ type AuthState = typeof initialAuthState;
  * 
  * Why this works without Zone.js:
  * - rxMethod() subscribes to observables and updates signals
+ * - from() wraps Promises into Observables for rxMethod
  * - patchState() is the only way to modify state (enforced by @ngrx/signals)
  * - Every patchState() call triggers signal updates
  * - Signal updates trigger change detection in zone-less mode
@@ -57,13 +58,13 @@ export const AuthStore = signalStore(
     isUnauthenticated: computed(() => status() === 'unauthenticated'),
   })),
   withMethods((store, authRepository = inject(AUTH_REPOSITORY)) => {
-    // Reactive login method using rxMethod
-    // Zone-less: Observable operations update signals via patchState
+    // Reactive login method using rxMethod with Promise-based repository
+    // Zone-less: from() wraps Promise, Observable operations update signals via patchState
     const loginEffect = rxMethod<{ email: string; password: string }>(
       pipe(
         tap(() => patchState(store, { status: 'loading', error: null })),
         switchMap((credentials) =>
-          authRepository.login(credentials.email, credentials.password).pipe(
+          from(authRepository.login(credentials.email, credentials.password)).pipe(
             tap((user) => {
               patchState(store, {
                 user: user || null,
@@ -84,12 +85,12 @@ export const AuthStore = signalStore(
       )
     );
 
-    // Reactive register method using rxMethod
+    // Reactive register method using rxMethod with Promise-based repository
     const registerEffect = rxMethod<{ email: string; password: string }>(
       pipe(
         tap(() => patchState(store, { status: 'loading', error: null })),
         switchMap((credentials) =>
-          authRepository.register(credentials.email, credentials.password).pipe(
+          from(authRepository.register(credentials.email, credentials.password)).pipe(
             tap((user) => {
               patchState(store, {
                 user: user || null,
@@ -110,12 +111,12 @@ export const AuthStore = signalStore(
       )
     );
 
-    // Reactive reset password method using rxMethod
+    // Reactive reset password method using rxMethod with Promise-based repository
     const resetPasswordEffect = rxMethod<{ email: string }>(
       pipe(
         tap(() => patchState(store, { status: 'loading', error: null })),
         switchMap((data) =>
-          authRepository.resetPassword(data.email).pipe(
+          from(authRepository.resetPassword(data.email)).pipe(
             tap(() => {
               patchState(store, {
                 status: 'idle',
@@ -134,12 +135,12 @@ export const AuthStore = signalStore(
       )
     );
 
-    // Reactive logout method using rxMethod
+    // Reactive logout method using rxMethod with Promise-based repository
     const logoutEffect = rxMethod<void>(
       pipe(
         tap(() => patchState(store, { status: 'loading' })),
         switchMap(() =>
-          authRepository.logout().pipe(
+          from(authRepository.logout()).pipe(
             tap(() => {
               patchState(store, {
                 user: null,
@@ -184,25 +185,18 @@ export const AuthStore = signalStore(
   }),
   withHooks({
     onInit(store, authRepository = inject(AUTH_REPOSITORY)) {
-      // Reactive method to sync auth state changes
-      // Zone-less: This runs continuously, updating signals when Firebase auth state changes
-      const syncAuthState = rxMethod<void>(
-        pipe(
-          switchMap(() => authRepository.authState$),
-          tap((user) => {
-            store.setUser(user);
-          }),
-          catchError((error) => {
-            console.error('Auth state sync error:', error);
-            return of(null);
-          })
-        )
-      );
+      // Subscribe to auth state changes using callback pattern
+      // Zone-less: Callback updates signals directly, triggering change detection
+      const unsubscribe = authRepository.onAuthStateChanged((user) => {
+        store.setUser(user);
+      });
 
-      // Start syncing auth state
-      // This creates a reactive subscription that updates signals
-      // Signal updates trigger change detection in zone-less mode
-      syncAuthState();
+      // Return cleanup function (optional, but good practice)
+      // Note: @ngrx/signals doesn't expose onDestroy in withHooks yet,
+      // but the unsubscribe function is returned for future use
+      return () => {
+        unsubscribe();
+      };
     },
   })
 );

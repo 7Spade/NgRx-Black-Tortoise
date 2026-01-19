@@ -101,10 +101,14 @@
     width: 20px;
     height: 20px;
     font-size: 20px;
-    transition: transform 200ms ease;
+    transition: transform 200ms ease, opacity 200ms ease;
     
     &.rotated {
       transform: rotate(180deg);
+    }
+    
+    &.loading {
+      opacity: 0.5;
     }
   }
   

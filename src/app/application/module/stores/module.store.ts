@@ -1,19 +1,51 @@
 /**
- * Module Store
+ * ModuleStore - PROJECTION-ONLY Reactive Store
  * 
- * Manages workspace modules state using NgRx Signals.
- * Modules represent features/sections within a workspace (Tasks, Documents, etc.)
+ * ╔═══════════════════════════════════════════════════════════════════╗
+ * ║  📖 READ-ONLY PROJECTION: Workspace Modules from WorkspaceStore    ║
+ * ╚═══════════════════════════════════════════════════════════════════╝
  * 
- * Reactive Auto-loading:
- * - Loads modules when workspace changes via WorkspaceStore
- * - Resets state when workspace changes
- * - Tracks enabled modules and module ordering
+ * ARCHITECTURAL ROLE:
+ * ===================
+ * This store is a REACTIVE PROJECTION that:
+ * 1. Reacts to WorkspaceStore.currentWorkspace() changes via effect
+ * 2. Loads modules for the current workspace from repository
+ * 3. Provides computed signals for enabled/ordered modules
+ * 4. NEVER mutates workspace or context state
+ * 
+ * CANONICAL REACTIVE FLOW:
+ * ========================
+ * 
+ * WorkspaceStore.currentWorkspace signal changes →
+ *   ModuleStore.effect (line 217-225) detects change →
+ *     Calls loadWorkspaceModules() →
+ *       Updates modules signal →
+ *         UI (sidebar) re-renders with new module list
+ * 
+ * FORBIDDEN PATTERNS:
+ * ===================
+ * ❌ Direct workspace switching from this store
+ * ❌ Cross-store state mutation
+ * ❌ Assumptions about workspace availability
+ * 
+ * ALLOWED PATTERNS:
+ * =================
+ * ✅ Read modules() signal for current workspace modules
+ * ✅ Read enabledModules() for filtered list
+ * ✅ Call updateModuleOrder() to save module ordering
+ * 
+ * DEPENDENCY DIRECTION (DDD):
+ * ===========================
+ * ContextStore (owns currentWorkspaceId) →
+ *   WorkspaceStore (loads workspace details) →
+ *     ModuleStore (loads workspace modules) →
+ *       UI (renders sidebar/navigation)
  */
 
 import { signalStore, withState, withComputed, withMethods, withHooks, patchState } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { computed, effect, inject } from '@angular/core';
-import { pipe, switchMap, tap, map } from 'rxjs';
+import { pipe, switchMap, tap, map, from } from 'rxjs';
 import { tapResponse } from '@ngrx/operators';
 
 // Domain
@@ -158,7 +190,7 @@ export const ModuleStore = signalStore(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
         switchMap(({ moduleId, enabled }) => 
-          moduleRepository.toggleModuleEnabled(moduleId, enabled).pipe(
+          from(moduleRepository.toggleModuleEnabled(moduleId, enabled)).pipe(
             map(() => ({ moduleId, enabled }))
           )
         ),

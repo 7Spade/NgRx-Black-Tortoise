@@ -18,8 +18,8 @@ import { pipe, switchMap, tap, catchError, of } from 'rxjs';
 import { tapResponse } from '@ngrx/operators';
 import { initialAccountState } from './account.state';
 import { Account } from '@domain/account';
-import { AccountFirestoreService } from '@infrastructure/account/services/account.service';
-import { AuthStore } from '@application/auth/stores/auth.store';
+import { AccountAggregatorService } from '../services/account-aggregator.service';
+import { from } from 'rxjs';
 
 type AccountState = typeof initialAccountState;
 
@@ -61,12 +61,12 @@ export const AccountStore = signalStore(
     // Account count
     accountCount: computed(() => accounts().length),
   })),
-  withMethods((store, accountService = inject(AccountFirestoreService)) => {
+  withMethods((store, accountAggregator = inject(AccountAggregatorService)) => {
     // Load accounts for the current user
     const loadAccountsEffect = rxMethod<string>(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
-        switchMap((userId) => accountService.getAccountsByUserId(userId)),
+        switchMap((userId) => from(accountAggregator.getAccountsByUserId(userId))),
         tapResponse({
           next: (accounts) => {
             patchState(store, {
@@ -85,16 +85,27 @@ export const AccountStore = signalStore(
       )
     );
 
-    // Set current account
-    const setCurrentAccount = (account: Account | null) => {
-      patchState(store, { currentAccount: account });
-    };
-
     return {
       loadAccounts(userId: string): void {
         loadAccountsEffect(userId);
       },
-      setCurrentAccount,
+      
+      /**
+       * Set current account
+       * 
+       * ⚠️ ARCHITECTURE NOTE:
+       * AccountStore only manages account state. It does NOT propagate to ContextStore.
+       * 
+       * Canonical Flow:
+       * 1. UI calls AccountStore.setCurrentAccount(account)
+       * 2. UI separately calls ContextStore.switchContext() based on account type
+       * 
+       * This separation prevents circular dependencies and maintains clean
+       * unidirectional data flow per DDD principles.
+       */
+      setCurrentAccount(account: Account | null) {
+        patchState(store, { currentAccount: account });
+      },
       
       // Reset store state
       reset() {

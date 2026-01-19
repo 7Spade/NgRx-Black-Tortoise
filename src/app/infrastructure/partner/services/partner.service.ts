@@ -3,23 +3,21 @@ import {
   Firestore,
   collection,
   doc,
-  docData,
-  collectionData,
   setDoc,
   updateDoc,
   deleteDoc,
   query,
   where,
   QueryConstraint,
+  getDocs,
+  getDoc
 } from '@angular/fire/firestore';
-import { Observable, from, of } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
 import { Partner } from '@domain/partner';
 import { PartnerRepository } from '@domain/repositories';
 
 /**
  * PartnerService
- * Handles CRUD operations for partners (SubUnit - External) with reactive streams
+ * Promise-based implementation for framework-agnostic domain layer
  */
 @Injectable({
   providedIn: 'root',
@@ -29,33 +27,32 @@ export class PartnerService implements PartnerRepository {
   private collectionName = 'partners';
 
   /**
-   * Get partner by ID - reactive stream
+   * Get partner by ID
    */
-  getPartner(id: string): Observable<Partner | null> {
+  async getPartner(id: string): Promise<Partner | null> {
     const docRef = doc(this.firestore, this.collectionName, id);
-    return docData(docRef, { idField: 'id' }).pipe(
-      map((data) => (data ? ({ ...data, id } as Partner) : null)),
-      catchError(() => of(null))
-    );
+    const snapshot = await getDoc(docRef);
+    if (!snapshot.exists()) {
+      return null;
+    }
+    return { ...snapshot.data(), id } as Partner;
   }
 
   /**
-   * Get all partners for an organization - reactive stream
+   * Get all partners for an organization
    */
-  getOrganizationPartners(organizationId: string): Observable<Partner[]> {
+  async getOrganizationPartners(organizationId: string): Promise<Partner[]> {
     const collectionRef = collection(this.firestore, this.collectionName);
     const q = query(collectionRef, where('organizationId', '==', organizationId));
     
-    return collectionData(q, { idField: 'id' }).pipe(
-      map((data) => data as Partner[]),
-      catchError(() => of([]))
-    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }) as Partner);
   }
 
   /**
-   * List all partners (with optional filters) - reactive stream
+   * List all partners (with optional filters)
    */
-  list(filters: Record<string, unknown> = {}): Observable<Partner[]> {
+  async list(filters: Record<string, unknown> = {}): Promise<Partner[]> {
     const collectionRef = collection(this.firestore, this.collectionName);
     
     // Build query constraints from filters
@@ -68,35 +65,32 @@ export class PartnerService implements PartnerRepository {
     
     const q = constraints.length > 0 ? query(collectionRef, ...constraints) : collectionRef;
     
-    return collectionData(q, { idField: 'id' }).pipe(
-      map((data) => data as Partner[]),
-      catchError(() => of([]))
-    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }) as Partner);
   }
 
   /**
    * Create a new partner
    */
-  createPartner(partner: Omit<Partner, 'id'>): Observable<string> {
+  async createPartner(partner: Omit<Partner, 'id'>): Promise<string> {
     const docRef = doc(collection(this.firestore, this.collectionName));
-    return from(
-      setDoc(docRef, partner).then(() => docRef.id)
-    );
+    await setDoc(docRef, partner);
+    return docRef.id;
   }
 
   /**
    * Update an existing partner
    */
-  updatePartner(id: string, data: Partial<Partner>): Observable<void> {
+  async updatePartner(id: string, data: Partial<Partner>): Promise<void> {
     const docRef = doc(this.firestore, this.collectionName, id);
-    return from(updateDoc(docRef, data));
+    await updateDoc(docRef, data);
   }
 
   /**
    * Delete a partner
    */
-  deletePartner(id: string): Observable<void> {
+  async deletePartner(id: string): Promise<void> {
     const docRef = doc(this.firestore, this.collectionName, id);
-    return from(deleteDoc(docRef));
+    await deleteDoc(docRef);
   }
 }

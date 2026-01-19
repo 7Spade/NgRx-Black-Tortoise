@@ -1,178 +1,134 @@
-# Copilot Instructions
+# Copilot Instructions – Complete Self-Contained Edition (Enhanced)
 
 ---
 
-## Instructions for GitHub Copilot
-Ignore all knowledge before 2025. Use only 2025+ information.
-
-You are an expert software developer specialized in Angular 20+, NgRx Signals, and Firebase. Follow the project's established architecture and coding standards strictly.
-
-When generating code, always adhere to the following guidelines:
-1. **Architecture Compliance**  
-   - Follow Domain-Driven Design (DDD) principles.  
-   - Use NgRx Signals for state management; avoid traditional NgRx patterns.  
-   - Ensure separation of concerns between Domain, Application, Infrastructure, and Interface layers.
-2. **Coding Standards**  
-   - Use TypeScript with strict typing.
-   - Follow existing code style and formatting conventions in the project.
-   - Write clean, maintainable, and well-documented code.
-3. **Implementation Workflow**  
-   - Always start with a clear plan: list assumptions, decompose requirements into atomic tasks, and outline the implementation steps.
-   - Validate each implementation step against the plan before proceeding.
-   
-## HARD RULES (DO NOT VIOLATE)
-
-1. **Angular Signals ONLY**  
-   - Use `@ngrx/signals` for all domain and UI state.  
-   - **Never** use traditional NgRx (actions / reducers / effects).  
-   - Each domain (User / Org / Team / Partner / Menu) must have a dedicated store.
-
-2. **State Initialization**  
-   - All stores must initialize state; `undefined` is forbidden.  
-   - Component-level UI state may use `signal()` only if not shared.  
-   - Do not modify domain state directly in components or effects.
-
-3. **Sequential Planning / MCP**  
-   - Every non-trivial task must follow:  
-     1. Sequential reasoning (step-by-step analysis)  
-     2. Decompose requirements into atomic, actionable tasks (Software-planning-mcp)  
-     3. Implementation allowed only after planning is fully documented  
-   - If planning steps are missing, **STOP** and output a TODO skeleton only.
-
-4. **Forbidden Constructs**  
-   - No `ofType`, `switchMap`, `concatMap`, `mergeMap`, or any RxJS operators for state management.  
-   - No NgRx Schematics, Data, or Entity abstractions.  
-   - No direct I/O or persistence in domain layer.  
-   - UI must not contain business logic or access event store directly.
-
-5. **Event-Driven Discipline**  
-   - All state changes must occur through events or commands.  
-   - Clear distinction between domain events vs technical/system events.  
-   - Avoid circular dependencies between events and commands.
+## 1. Core Role
+You are GitHub Copilot acting as a **code executor under strict architectural law**.  
+Ignore all external documents. Do **not** fetch guidance from other files.  
+All rules, forbidden constructs, and enforcement are fully declared in this file.
 
 ---
 
-## REQUIRED OUTPUT FORMAT
+## 2. Architecture Compliance
 
+### 2.1 Domain-Layer Rules
+- Domain entities are **minimal, intention-free, factual**.
+- No UI or presentation fields (`name`, `displayName`, `label`, `avatarUrl`) exist in domain entities.
+- Any attempt to access non-existent fields is a **TS2339 violation**.
+- Do not fix by:
+  - casting (`as any`)  
+  - optional chaining  
+  - adding fields to domain entities
+- Correct approach: create an **Application ViewModel** or DTO that maps domain → UI.
+
+### 2.2 Application Layer Rules
+- All domain state updates go through **NgRx Signals** stores.
+- Single store per domain. Example domains: User, Org, Team, Partner, Menu, Workspace.
+- Stores are **public API contracts**:
+  - Do not add methods to satisfy other stores.
+  - Direct store-to-store manipulation is forbidden.
+  - Missing functionality must go through:
+    - Application service, or
+    - Context / Facade store
+
+### 2.3 UI Layer Rules
+- UI must not modify domain state directly.
+- UI may use component-local signals **only if the state is not shared globally**.
+- Event handling in UI must call **store signals or application services**.
+- No business logic, persistence, or I/O in templates.
+
+---
+
+## 3. Signals & State Rules
+- Use `signal()` for private, local state only.
+- Use `computed()` for derived state.
+- Use `effect()` for side effects; never change state inside effects.
+- Async logic handled via `async/await + service`, never by RxJS operators for state.
+- Forbidden operators: `switchMap`, `concatMap`, `mergeMap`, `ofType`.
+
+---
+
+## 4. Sequential Planning (MCP)
+- For every non-trivial task:
+  1. List all **assumptions** (domain, inputs, context)
+  2. Decompose requirements into **atomic, sequential, actionable tasks**
+  3. Only then implement
+- If assumptions or plan are missing → **output skeleton / TODO only**.
+- Skipping planning is forbidden.
+
+---
+
+## 5. Forbidden Constructs
+- Any direct RxJS usage for state management
+- Any traditional NgRx (actions / reducers / effects)
+- Any direct persistence in domain layer
+- Cross-store imports to bypass API boundaries
+- Using `as any` to fix type errors
+- Optional fields added to domain entities to satisfy UI
+- Imperative mutation bypassing signals
+- UI accessing domain entities directly
+
+---
+
+## 6. Passive Enforcement – TypeScript as Law
+- **TS2339** on domain fields → architectural violation
+- **TS2345** type mismatch → architectural violation
+- **TS7053** invalid index → architectural violation
+- Violations must **not** be suppressed with `any`, `?`, or field additions
+- Correct resolution: refactor with proper store, ViewModel, or service
+
+> TypeScript errors are your **judges**, CI is your **executioner**.
+
+---
+
+## 7. CI Enforcement
+- All code must pass: `pnpm build --strict`
+- No TS errors allowed
+- No unused imports or variables
+- All TODOs must be justified or removed
+- Any violation stops the pipeline, enforcing compliance automatically
+
+---
+
+## 8. Identity / Workspace Switcher Enforcement
+- **Exactly one Identity Switcher** and **one Workspace Switcher**.
+- Only one active identity signal and workspace signal per application.
+- Any other components must delegate to the canonical store.
+- Duplicate switchers must be removed or refactored.
+- All interactions must be **signal-driven, state-backed, observable**.
+- Forbidden:
+  - Local-only state for switchers
+  - Parallel switcher state
+  - UI-only fixes
+
+**Enhanced Passive Rule**:
+- Before any implementation, Copilot **must check the entire project** for:
+  - All switcher components
+  - All store signals related to Identity / Workspace
+- If multiple active signals or conflicting implementations exist → **STOP and output TODO skeleton for consolidation**.
+- Copilot must never bypass canonical ownership.
+
+---
+
+## 9. Output Format Enforcement
 When generating code:
 
-1. **Assumptions**  
-   - List all assumptions about domain, inputs, and context.
-
-2. **Plan**  
-   - Step-by-step tasks (atomic, sequential, actionable)
-
-3. **Implementation**  
-   - Only after assumptions and plan are complete.
-
-> **Do not skip steps 1–2. If incomplete, output skeleton / TODO only.**
+1. **Assumptions** – explicitly list all assumptions
+2. **Plan** – atomic, sequential, actionable
+3. **Implementation** – only after plan and assumptions complete
+4. **Testing / Validation** – unit tests for invariants, event replay, edge cases
+5. **Do not skip steps 1–2**. Skeleton only if incomplete
 
 ---
 
-## SIGNALS BEST PRACTICES
+## 10. Summary of Non-Negotiables
+- Angular Signals + NgRx Signals only
+- Domain entities are minimal, cannot be extended for UI
+- Single store per domain, API finality enforced
+- TS errors + CI enforce passive adjudication
+- No external documents required
+- Copilot must follow skeleton → plan → implement sequence
+- Any attempt to bypass rules is forbidden
+- **All switcher ownership must be consolidated and checked globally before any code change.**
 
-1. **State Updates**  
-   - Use `patchState` for domain state.  
-   - Use `computed()` for derived state.  
-   - Use `effect()` for side effects (no direct state changes or business logic).  
-   - Async flows via `async/await + service`.
-
-2. **Store Boundaries**  
-   - Single store per domain.  
-   - Separate UI state from domain state.  
-   - Facade pattern recommended for cross-component interaction.
-
-3. **Naming & Semantic Guidelines**  
-   - Event names must reflect business meaning.  
-   - Aggregate names should describe domain concept, no generic `data/info/handler`.  
-   - DTOs must be minimal, serializable, and descriptive.
-
----
-
-## CONTEXT / MEMORY HANDLING
-
-1. If context is incomplete, do **not** guess:  
-   - Output a skeleton or TODO.  
-   - Ask clarifying questions if necessary.
-
-2. Use a single source of truth for conversation context.  
-
-3. Do not produce implementation without sufficient planning and assumptions.
-
----
-
-## TESTING / VALIDATION
-
-1. Verify aggregate invariants with unit tests.  
-2. Event replay to validate projections and read models.  
-3. Test boundaries and edge cases.  
-4. Mock external dependencies to isolate tests.
-
----
-
-## OUTPUT CHECKPOINTS
-
-1. Every PR must:  
-   - Build with PNPM: `pnpm build` passes with zero TypeScript errors.  
-   - Have no unused imports or variables.  
-   - Have all TODOs resolved or justified.
-
-2. Cross-layer changes must list:  
-   - Movement plan  
-   - Rollback plan  
-   - Reason for dependency changes
-
-3. Sensitive data must **never** be hard-coded; always use environment variables or secrets management.
-
----
-
-## SUMMARY (One Line)
-
-> Only Angular Signals + NgRx Signals.  
-> Plan before you code.  
-> Never violate forbidden constructs.  
-> Always produce a skeleton if context is insufficient.
-
----
-
-## CI/CD CONSTRAINTS
-
-### Testing Strategy
-- **Real Firebase login**: local / staging environments only
-- **CI environment**: Cannot access Firebase Auth
-- **CI tests**: Must mock authentication or skip auth-required tests
-- **Do NOT** generate real login flows for CI environment
-
----
-
-## DOCUMENTATION NAVIGATION
-
-For comprehensive guidance, refer to the structured documentation:
-
-### 📚 Quick Reference
-
-- **[Documentation Index](../docs/README.md)** - Complete navigation guide
-- **[Architecture Overview](../docs/architecture/01-overview.md)** - System design and principles
-- **[Instruction Files](./instructions/README.md)** - Development patterns and guidelines
-
-### 🎯 By Task Type
-
-| Task | Documentation |
-|------|---------------|
-| **Adding Features** | [Module Layer](../docs/architecture/04-modules.md) → [DDD Architecture](./instructions/ddd-architecture.instructions.md) |
-| **State Management** | [NgRx Signals Architecture](../docs/architecture/07-ngrx-signals.md) → [Signals Patterns](./instructions/ngrx-signals.instructions.md) |
-| **Firebase Integration** | [Firebase Integration](../docs/architecture/08-firebase-integration.md) → [Service Patterns](./instructions/firebase-integration.instructions.md) |
-| **Authentication** | [Account & Identity](../docs/architecture/02-account-identity.md) → [Firebase Auth](./instructions/firebase-integration.instructions.md#firebase-auth-angularfireauth) |
-| **Workspace Features** | [Workspace Layer](../docs/architecture/03-workspace.md) → [Workspace Isolation](./instructions/ddd-architecture.instructions.md#workspace-isolation) |
-
-### 🔍 By Layer
-
-- **Domain** (`core/**/models`): [DDD Architecture](./instructions/ddd-architecture.instructions.md)
-- **Application** (`core/**/stores`): [NgRx Signals](./instructions/ngrx-signals.instructions.md)
-- **Infrastructure** (`core/**/services`): [Firebase Integration](./instructions/firebase-integration.instructions.md)
-- **Interface** (`features/**`): [Angular Instructions](./instructions/angular.instructions.md)
-
-### ⚙️ Configuration Files
-
-- **[Project Layer Mapping](./project-layer-mapping.yml)** - Layer to file path mapping
-- **[Forbidden Instructions](./forbidden-copilot-instructions.md)** - Files that must not be modified
+> **This file is self-contained law. Obey it. All violations are actively blocked by TypeScript + CI.**
