@@ -1,0 +1,47 @@
+@use '@angular/material' as mat;
+
+/**
+ * Global styles with Material Design 3 theme tokens.
+ */
+@include mat.core();
+
+$app-theme: mat.define-theme((
+  color: (
+    theme-type: light,
+    primary: mat.$azure-palette,
+    tertiary: mat.$blue-palette,
+  ),
+  typography: (
+    brand-family: 'Roboto, system-ui, -apple-system, sans-serif',
+    plain-family: 'Roboto, system-ui, -apple-system, sans-serif',
+    bold-weight: 700,
+    medium-weight: 500,
+    regular-weight: 400,
+  ),
+  density: (
+    scale: 0,
+  )
+));
+
+:root {
+  @include mat.all-component-themes($app-theme);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  font-family: 'Roboto, system-ui, -apple-system, sans-serif';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+}

@@ -1,0 +1,40 @@
+{
+  "recommendations": [
+    // Essential Extensions
+    "github.copilot",
+    "github.copilot-chat",
+    
+    // Angular Development
+    "angular.ng-template",
+    "cyrilletuzi.angular-schematics",
+    
+    // Code Quality
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    
+    // TypeScript
+    "ms-vscode.vscode-typescript-next",
+    
+    // Firebase
+    "toba.vsfire",
+    
+    // Markdown
+    "yzhang.markdown-all-in-one",
+    "davidanson.vscode-markdownlint",
+    
+    // Git
+    "eamodio.gitlens",
+    
+    // Testing
+    "ms-playwright.playwright",
+    
+    // Utilities
+    "christian-kohler.path-intellisense",
+    "visualstudioexptteam.vscodeintellicode",
+    "streetsidesoftware.code-spell-checker"
+  ],
+  "unwantedRecommendations": [
+    // Zone.js related (project is zone-less)
+    "johnpapa.angular2"
+  ]
+}
