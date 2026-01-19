@@ -84,7 +84,8 @@ export interface Organization {
   };
   
   // Member management
-  // IMPORTANT: Only store member IDs, not full User objects
+  // IMPORTANT: Only store member IDs and roles, not full User objects
+  // Consistent with Team and Partner entity patterns
   members: OrganizationMember[];
   
   // Teams (internal organizational units)
@@ -142,30 +143,34 @@ export const OrganizationHelpers = {
   },
   
   /**
-   * Check if a user is an owner of the organization
-   */
-  isOwner(org: Organization, userId: string): boolean {
-    return org.members.some(
-      m => m.userId === userId && m.role === OrganizationRole.OWNER
-    );
-  },
-  
-  /**
-   * Check if a user is an admin of the organization
-   */
-  isAdmin(org: Organization, userId: string): boolean {
-    return org.members.some(
-      m => m.userId === userId && 
-      (m.role === OrganizationRole.OWNER || m.role === OrganizationRole.ADMIN)
-    );
-  },
-  
-  /**
    * Get user's role in the organization
    */
   getMemberRole(org: Organization, userId: string): OrganizationRole | null {
     const member = org.members.find(m => m.userId === userId);
     return member?.role ?? null;
+  },
+  
+  /**
+   * Check if user is an owner
+   */
+  isOwner(org: Organization, userId: string): boolean {
+    const member = org.members.find(m => m.userId === userId);
+    return member?.role === OrganizationRole.OWNER;
+  },
+  
+  /**
+   * Check if user is an admin or owner
+   */
+  isAdminOrOwner(org: Organization, userId: string): boolean {
+    const member = org.members.find(m => m.userId === userId);
+    return member?.role === OrganizationRole.OWNER || member?.role === OrganizationRole.ADMIN;
+  },
+  
+  /**
+   * Get member count
+   */
+  getMemberCount(org: Organization): number {
+    return org.members.length;
   },
   
   /**
