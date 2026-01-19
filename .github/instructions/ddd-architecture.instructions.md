@@ -159,6 +159,18 @@ shared  ←（只能被引用，不能反向依賴任何層）
 
 ---
 
+### 📦 Physical Type Isolation
+
+```typescript
+// ✅ CORRECT: domain/identity/identity.types.ts
+export type IdentityType = 'user' | 'organization' | 'bot';
+
+// ✅ CORRECT: domain/membership/membership.types.ts
+export type MembershipType = 'team' | 'partner';
+```
+
+---
+
 ## 🔁 用箭頭畫一次完整圖（最重要）
 
 ```

@@ -2,6 +2,26 @@
 
 > **術語說明**: 請參考 [專業術語對照表 (GLOSSARY.md)](./GLOSSARY.md) 了解本文件使用的標準術語。
 
+## 🎯 RULE OF THUMB
+```
+If it can authenticate → Identity
+If it only groups users → Membership  
+Team/Partner NEVER authenticate
+```
+
+### Identity Layer: user, organization, bot
+**⚠️ EXPLICIT EXCLUSION:** NO Team/Partner
+
+### Membership Layer: team, partner (NON-identity)
+
+### 🚫 Forbidden
+```typescript
+// ❌ WRONG
+type IdentityType = 'user' | 'organization' | 'bot' | 'team' | 'partner';
+```
+
+---
+
 根據您的多工作區團隊協作系統架構,以下是 `src/app/domain` 的完整檔案樹:
 
 ```

@@ -534,6 +534,32 @@ appConfig.providers
    │  }
 
 
+## 🎯 Identity vs Membership Layer Separation
+
+**RULE OF THUMB:**
+- If it can authenticate → Identity
+- If it only groups users → Membership  
+- Team/Partner NEVER authenticate
+
+### Identity Types (Auth-bound)
+```typescript
+// ✅ CORRECT
+type IdentityType = 'user' | 'organization' | 'bot';
+```
+**⚠️ EXPLICIT EXCLUSION:** NO Team/Partner
+
+### Membership Types (NON-identity)
+```typescript
+// ✅ CORRECT
+type MembershipType = 'team' | 'partner';
+```
+
+### 🚫 Forbidden Patterns
+```typescript
+// ❌ WRONG
+type IdentityType = 'user' | 'organization' | 'bot' | 'team' | 'partner';
+```
+
 🎯 核心設計原則總結
 
 ✅ DDD 分層架構
