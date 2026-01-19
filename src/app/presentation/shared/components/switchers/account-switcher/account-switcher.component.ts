@@ -1,37 +1,52 @@
-import { Component, computed, inject, signal, DestroyRef, OnInit, HostListener } from '@angular/core';
+import { Component, inject, signal, DestroyRef, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
-import { AuthStore } from '@application/auth/stores/auth.store';
-import { AccountStore } from '@application/account/stores/account.store';
-import { ContextStore } from '@application/context/stores/context.store';
+import { AccountFacade } from '@application/account/facades/account.facade';
 import { BREAKPOINTS } from '@shared/constants/breakpoints.constant';
-import { Account } from '@domain/account';
-
-type AccountType = 'user' | 'organization' | 'bot' | 'team' | 'partner';
+import { Account, IdentityType, MembershipType } from '@domain/account';
 
 /**
  * Account Switcher Component
  * 
- * Displays a dropdown menu for switching between different account types:
- * - User accounts
- * - Organization accounts
- * - Team accounts
- * - Partner accounts
+ * ARCHITECTURAL ROLE: PASSIVE RENDERER + EVENT EMITTER ONLY
+ * ===========================================================
+ * 
+ * This component is a pure presentation layer component with ZERO business logic.
+ * 
+ * RESPONSIBILITIES:
+ * =================
+ * 1. Bind to AccountFacade.viewModel() signal
+ * 2. Render account switcher UI
+ * 3. Emit user events (clicks) to AccountFacade
+ * 4. Manage local UI state (menu open/close, responsive breakpoints)
+ * 
+ * FORBIDDEN PATTERNS:
+ * ===================
+ * ❌ Direct AccountStore / ContextStore / AuthStore imports
+ * ❌ Business logic (validation, orchestration, UX feedback)
+ * ❌ Cross-store coordination
+ * ❌ Multiple signal reads in template
+ * 
+ * ALLOWED PATTERNS:
+ * =================
+ * ✅ Inject ONLY AccountFacade
+ * ✅ Bind to facade.viewModel() in template
+ * ✅ Call facade.switchAccount(account) on user click
+ * ✅ Manage local UI state (breakpoints, menu state)
  * 
  * Features:
  * - Responsive design (desktop/tablet/mobile)
  * - Accessibility (ARIA attributes, keyboard navigation)
  * - Material Design 3 styling
  * - Zone-less reactive state management
- * 
- * Integrates with AuthStore and ContextStore for state management.
  */
 @Component({
   selector: 'app-account-switcher',
@@ -42,52 +57,25 @@ type AccountType = 'user' | 'organization' | 'bot' | 'team' | 'partner';
     MatMenuModule,
     MatIconModule,
     MatDividerModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatSnackBarModule
   ],
   templateUrl: './account-switcher.component.html',
   styleUrl: './account-switcher.component.scss'
 })
 export class AccountSwitcherComponent implements OnInit {
-  // Stores
-  protected authStore = inject(AuthStore);
-  protected accountStore = inject(AccountStore);
-  protected contextStore = inject(ContextStore);
+  // SINGLE FACADE INJECTION (Application Layer)
+  protected facade = inject(AccountFacade);
+  
+  // Local UI services (NOT stores)
   private breakpointObserver = inject(BreakpointObserver);
   private destroyRef = inject(DestroyRef);
   
-  // Responsive states
+  // Local UI state ONLY (not business state)
   protected isMobile = signal(false);
   protected isTablet = signal(false);
-  
-  // Menu state
   protected isMenuOpen = signal(false);
-  
-  // Screen reader announcement
   protected announceMessage = signal('');
-  
-  // Computed values - use AccountStore for account data
-  protected displayName = computed(() => {
-    const currentAccount = this.accountStore.currentAccount();
-    if (!currentAccount) {
-      const user = this.authStore.user();
-      return user?.displayName || user?.email || 'Not logged in';
-    }
-    
-    return currentAccount.displayName || currentAccount.email || 'User';
-  });
-  
-  protected avatarUrl = computed(() => {
-    const currentAccount = this.accountStore.currentAccount();
-    return currentAccount?.photoURL || null;
-  });
-  
-  protected currentAccountType = computed((): AccountType => {
-    const currentAccount = this.accountStore.currentAccount();
-    if (currentAccount) {
-      return currentAccount.type as AccountType;
-    }
-    return 'user';
-  });
   
   ngOnInit(): void {
     // Detect mobile devices
@@ -140,12 +128,14 @@ export class AccountSwitcherComponent implements OnInit {
   /**
    * Get icon for account type
    */
-  getAccountTypeIcon(type: AccountType): string {
+  getAccountTypeIcon(type: IdentityType | MembershipType): string {
     switch (type) {
       case 'user':
         return 'person';
       case 'organization':
         return 'business';
+      case 'bot':
+        return 'smart_toy';
       case 'team':
         return 'groups';
       case 'partner':
@@ -158,7 +148,7 @@ export class AccountSwitcherComponent implements OnInit {
   /**
    * Get badge color for account type
    */
-  getBadgeColor(type: AccountType): string {
+  getBadgeColor(type: IdentityType | MembershipType): string {
     switch (type) {
       case 'organization':
         return 'primary';
@@ -173,14 +163,51 @@ export class AccountSwitcherComponent implements OnInit {
   
   /**
    * Handle account switching
+   * 
+   * DELEGATION RULE:
+   * ================
+   * This method contains ZERO business logic.
+   * All validation, orchestration, and UX feedback delegated to AccountFacade → AccountSwitchUseCase.
+   * 
+   * UI RESPONSIBILITY:
+   * ==================
+   * 1. Call facade.switchAccount(account)
+   * 2. Read result for screen reader announcement
    */
   switchAccount(account: Account): void {
-    // Update current account in AccountStore
-    this.accountStore.setCurrentAccount(account);
+    const result = this.facade.switchAccount(account);
     
-    // Announce to screen readers
-    const accountName = account.displayName || account.email || account.id;
-    this.announceMessage.set(`Switched to account ${accountName}`);
-    setTimeout(() => this.announceMessage.set(''), 1000);
+    // Screen reader announcement (local UI concern)
+    if (result.announcement) {
+      this.announceMessage.set(result.announcement);
+      setTimeout(() => this.announceMessage.set(''), 1000);
+    }
+  }
+  
+  /**
+   * Navigate to user profile
+   */
+  goToProfile(): void {
+    // TODO: Implement navigation via Router
+    console.log('Navigate to profile');
+  }
+
+  /**
+   * Navigate to settings
+   */
+  goToSettings(): void {
+    // TODO: Implement navigation via Router
+    console.log('Navigate to settings');
+  }
+
+  /**
+   * Sign out the current user
+   * 
+   * DELEGATION RULE:
+   * ================
+   * Delegates to AccountFacade.logout() for coordinated logout.
+   */
+  signOut(): void {
+    this.facade.logout();
   }
 }

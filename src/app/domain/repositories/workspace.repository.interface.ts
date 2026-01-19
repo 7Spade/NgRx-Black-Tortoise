@@ -13,9 +13,16 @@ export interface WorkspaceRepository {
   getWorkspace(id: string): Promise<Workspace | null>;
   
   /**
-   * Get all workspaces for an organization
+   * Get all organization-owned workspaces
+   * Returns workspaces where ownerType === 'organization'
    */
   getOrganizationWorkspaces(organizationId: string): Promise<Workspace[]>;
+  
+  /**
+   * Get all user-owned personal workspaces
+   * Returns workspaces where ownerType === 'user'
+   */
+  getUserWorkspaces(userId: string): Promise<Workspace[]>;
   
   /**
    * Create a new workspace

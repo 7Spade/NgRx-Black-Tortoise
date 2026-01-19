@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal, DestroyRef, OnInit, HostListener } from '@angular/core';
+import { Component, inject, signal, DestroyRef, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
@@ -7,27 +7,50 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { FormsModule } from '@angular/forms';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
-import { WorkspaceStore } from '@application/workspace/stores/workspace.store';
-import { ContextStore } from '@application/context/stores/context.store';
+import { WorkspaceFacade } from '@application/workspace/facades/workspace.facade';
 import { Workspace } from '@domain/workspace';
 import { BREAKPOINTS } from '@shared/constants/breakpoints.constant';
+import { CreateWorkspaceDialogComponent } from '../../dialogs/create-workspace-dialog/create-workspace-dialog.component';
 
 /**
  * Workspace Switcher Component
  * 
- * Displays a dropdown menu for switching between workspaces with:
- * - Search functionality
- * - Workspace grouping (recent, favorites, my workspaces)
- * - Create workspace option
- * - Responsive design (desktop/tablet/mobile)
- * - Accessibility (ARIA attributes, keyboard navigation)
- * - Material Design 3 styling
+ * ╔══════════════════════════════════════════════════════════════════════╗
+ * ║  PRESENTATION LAYER: Passive Renderer + Event Emitter ONLY          ║
+ * ╚══════════════════════════════════════════════════════════════════════╝
  * 
- * Integrates with WorkspaceStore and ContextStore for state management.
+ * RESPONSIBILITY:
+ * ===============
+ * - Render workspace switcher UI
+ * - Capture user interactions (clicks, search input)
+ * - Delegate all orchestration to WorkspaceFacade
+ * 
+ * FORBIDDEN PATTERNS:
+ * ===================
+ * ❌ Direct store imports (WorkspaceStore, ContextStore)
+ * ❌ Business logic (validation, orchestration)
+ * ❌ Cross-store coordination
+ * ❌ UX feedback management (snackbars, announcements)
+ * ❌ Building domain objects
+ * 
+ * CORRECT PATTERN:
+ * ================
+ * ✅ Inject WorkspaceFacade ONLY
+ * ✅ Bind template to facade.viewModel()
+ * ✅ Express user intent via facade.switchWorkspace()
+ * ✅ Open dialogs for complex operations
+ * 
+ * ARCHITECTURE COMPLIANCE:
+ * ========================
+ * UI → WorkspaceFacade → WorkspaceSwitchUseCase → ContextStore
+ * 
+ * This component is a PASSIVE RENDERER. All logic lives in Application layer.
  */
 @Component({
   selector: 'app-workspace-switcher',
@@ -41,65 +64,44 @@ import { BREAKPOINTS } from '@shared/constants/breakpoints.constant';
     MatProgressSpinnerModule,
     MatFormFieldModule,
     MatInputModule,
-    FormsModule
+    FormsModule,
+    MatSnackBarModule
   ],
   templateUrl: './workspace-switcher.component.html',
   styleUrl: './workspace-switcher.component.scss'
 })
 export class WorkspaceSwitcherComponent implements OnInit {
-  // Stores
-  protected workspaceStore = inject(WorkspaceStore);
-  protected contextStore = inject(ContextStore);
+  /**
+   * ╔══════════════════════════════════════════════════════════════════════╗
+   * ║  SINGLE FACADE INJECTION: All workspace operations via facade       ║
+   * ╚══════════════════════════════════════════════════════════════════════╝
+   */
+  protected facade = inject(WorkspaceFacade);
   private breakpointObserver = inject(BreakpointObserver);
   private destroyRef = inject(DestroyRef);
+  private dialog = inject(MatDialog);
   
+  /**
+   * ╔══════════════════════════════════════════════════════════════════════╗
+   * ║  LOCAL UI STATE ONLY (no business logic, no derived data)           ║
+   * ╚══════════════════════════════════════════════════════════════════════╝
+   */
   // Responsive states
   protected isMobile = signal(false);
   protected isTablet = signal(false);
   
-  // Menu state
+  // Menu state (pure UI concern)
   protected isMenuOpen = signal(false);
-  protected searchQuery = signal('');
   
-  // Screen reader announcement
-  protected announceMessage = signal('');
-  
-  // Computed values
-  protected currentWorkspace = computed(() => {
-    return this.workspaceStore.currentWorkspace();
-  });
-  
-  protected currentWorkspaceName = computed(() => {
-    const workspace = this.currentWorkspace();
-    return workspace?.displayName || workspace?.name || 'Select workspace';
-  });
-  
-  protected allWorkspaces = computed(() => {
-    return this.workspaceStore.workspaces();
-  });
-  
-  protected filteredWorkspaces = computed(() => {
-    const query = this.searchQuery().toLowerCase();
-    const workspaces = this.allWorkspaces();
-    
-    if (!query) return workspaces;
-    
-    return workspaces.filter(ws => 
-      ws.name.toLowerCase().includes(query) ||
-      ws.displayName.toLowerCase().includes(query) ||
-      ws.description?.toLowerCase().includes(query)
-    );
-  });
-  
-  protected recentWorkspaces = computed(() => {
-    // TODO: Implement recent workspaces logic based on lastAccessedAt
-    return this.filteredWorkspaces().slice(0, 3);
-  });
-  
-  protected myWorkspaces = computed(() => {
-    // Get all filtered workspaces excluding recent ones
-    return this.filteredWorkspaces();
-  });
+  /**
+   * ╔══════════════════════════════════════════════════════════════════════╗
+   * ║  SINGLE VIEWMODEL: Facade exposes consolidated reactive state       ║
+   * ╚══════════════════════════════════════════════════════════════════════╝
+   * 
+   * Template binds ONLY to facade.viewModel()
+   * No component-level computed signals for derived data
+   */
+  protected viewModel = this.facade.viewModel;
   
   ngOnInit(): void {
     // Detect mobile devices
@@ -120,7 +122,13 @@ export class WorkspaceSwitcherComponent implements OnInit {
   }
   
   /**
-   * Keyboard navigation handler
+   * ╔══════════════════════════════════════════════════════════════════════╗
+   * ║  EVENT HANDLERS: Express user intent, delegate to facade            ║
+   * ╚══════════════════════════════════════════════════════════════════════╝
+   */
+  
+  /**
+   * Keyboard navigation handler (pure UI concern)
    */
   @HostListener('keydown', ['$event'])
   onKeyDown(event: KeyboardEvent): void {
@@ -128,7 +136,6 @@ export class WorkspaceSwitcherComponent implements OnInit {
     
     switch (event.key) {
       case 'Escape':
-        // Close menu
         this.isMenuOpen.set(false);
         event.preventDefault();
         break;
@@ -136,43 +143,58 @@ export class WorkspaceSwitcherComponent implements OnInit {
   }
   
   /**
-   * Menu opened event handler
+   * Menu opened event handler (pure UI state)
    */
   onMenuOpened(): void {
     this.isMenuOpen.set(true);
-    this.searchQuery.set(''); // Reset search on open
+    this.facade.clearSearch(); // Delegate search management to facade
   }
   
   /**
-   * Menu closed event handler
+   * Menu closed event handler (pure UI state)
    */
   onMenuClosed(): void {
     this.isMenuOpen.set(false);
-    this.searchQuery.set('');
+    this.facade.clearSearch();
   }
   
   /**
-   * Handle workspace selection
+   * Search input handler
+   * Delegates search logic to facade (filtering happens in ViewModel)
+   */
+  onSearchInput(query: string): void {
+    this.facade.setSearchQuery(query);
+  }
+  
+  /**
+   * Select workspace - EXPRESS USER INTENT ONLY
+   * 
+   * ❌ BEFORE (VIOLATION):
+   * - Component validated "already in workspace"
+   * - Component called contextStore.switchWorkspace() directly
+   * - Component managed MatSnackBar feedback
+   * - Component implemented screen reader announcements
+   * 
+   * ✅ AFTER (COMPLIANT):
+   * - Single line delegation to WorkspaceFacade
+   * - All orchestration, validation, and UX feedback in Application layer
+   * - Component is a passive event emitter
    */
   selectWorkspace(workspace: Workspace): void {
-    this.workspaceStore.setCurrentWorkspace(workspace);
-    // TODO: Navigate to workspace or trigger workspace change event
-    console.log('Selected workspace:', workspace.id);
-    
-    // Announce to screen readers
-    this.announceMessage.set(`Switched to workspace ${workspace.displayName || workspace.name}`);
-    setTimeout(() => this.announceMessage.set(''), 1000);
+    this.facade.switchWorkspace(workspace.id, workspace.displayName || workspace.name);
   }
   
   /**
-   * Check if workspace is currently selected
+   * Check if workspace is currently active
+   * Delegates to facade helper
    */
   isWorkspaceActive(workspaceId: string): boolean {
-    return this.currentWorkspace()?.id === workspaceId;
+    return this.facade.isWorkspaceActive(workspaceId);
   }
   
   /**
-   * Get workspace icon based on status or type
+   * Get workspace icon
+   * Pure presentation logic (icon selection based on domain state)
    */
   getWorkspaceIcon(workspace: Workspace): string {
     if (workspace.status === 'archived') return 'archive';
@@ -182,9 +204,16 @@ export class WorkspaceSwitcherComponent implements OnInit {
   
   /**
    * Handle create new workspace
+   * Opens dialog for user input collection
    */
   createWorkspace(): void {
-    // TODO: Navigate to workspace creation page or open dialog
-    console.log('Create new workspace');
+    this.dialog.open(CreateWorkspaceDialogComponent, {
+      width: '600px',
+      maxWidth: '90vw',
+      panelClass: 'create-workspace-dialog-panel',
+      autoFocus: true,
+      restoreFocus: true,
+      disableClose: false
+    });
   }
 }

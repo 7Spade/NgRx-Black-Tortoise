@@ -1,27 +1,38 @@
 ---
-description: 'NgRx Signals state management best practices for pure reactive Angular applications. Use signalStore, computed, patchState, and rxMethod only.'
-applyTo: '**/*store.ts, **/*stores/**/*.ts'
+description: 'NgRx Signals state management best practices for pure reactive Angular applications. Use signalStore, computed, patchState, and rxMethod only. No traditional NgRx patterns.'
+applyTo: '**'
 ---
 
-# NgRx Signals State Management Guidelines
+# NgRx Signals State Management
 
 ## Overview
 
-NgRx Signals provides pure reactive state management for Angular applications using Angular Signals. This is the ONLY state management approach allowed in this project.
+NgRx Signals provides pure reactive state management for Angular applications using Angular Signals. This is the **ONLY** state management approach allowed in this project.
 
 ## Core Principles
 
-**Forbidden Patterns:**
-- ❌ NO traditional NgRx (actions, reducers, effects)
-- ❌ NO RxJS operators for state management
-- ❌ NO direct state mutation
-- ❌ NO side effects in computed signals
+This project uses **ONLY** `@ngrx/signals` for state management. Traditional NgRx (actions, reducers, effects) is **FORBIDDEN**.
 
-**Required Patterns:**
+### Pure Reactive Principles
+
+```
+SignalsPrinciple = PureReactivity (
+  NoSideEffectInComputed | 
+  ImmutableState | 
+  UnidirectionalDataFlow | 
+  DerivedStateFromSignals
+)
+```
+
+**Core Rules**
 - ✅ All state managed with `signalStore`
 - ✅ All mutations via `patchState`
 - ✅ All derived state via `computed()`
 - ✅ All async operations via `rxMethod`
+- ❌ NO traditional NgRx (actions, reducers, effects)
+- ❌ NO RxJS operators for state management
+- ❌ NO direct state mutation
+- ❌ NO side effects in computed signals
 
 ## Store Structure
 
@@ -37,10 +48,17 @@ import { tapResponse } from '@ngrx/operators';
 
 // 1. Define State Interface
 export interface FeatureState {
+  // Data
   entities: Entity[];
   selectedId: string | null;
+  
+  // UI State
   loading: boolean;
   error: string | null;
+  
+  // Filters/Sorting
+  filters: Filters;
+  sorting: Sorting;
 }
 
 // 2. Initial State
@@ -48,46 +66,143 @@ const initialState: FeatureState = {
   entities: [],
   selectedId: null,
   loading: false,
-  error: null
+  error: null,
+  filters: {},
+  sorting: { field: 'createdAt', order: 'desc' }
 };
 
 // 3. Create Store
 export const FeatureStore = signalStore(
+  // Provide in root for singleton, or omit for scoped
   { providedIn: 'root' },
   
+  // State
   withState(initialState),
   
-  withComputed(({ entities, selectedId }) => ({
+  // Computed (Derived State)
+  withComputed(({ entities, selectedId, filters, sorting }) => ({
+    // Simple computed
     entityCount: computed(() => entities().length),
+    
+    // Computed with dependency
     selectedEntity: computed(() => 
       entities().find(e => e.id === selectedId()) ?? null
     ),
-    hasSelection: computed(() => selectedId() !== null)
+    
+    // Complex computed (filtering + sorting)
+    filteredEntities: computed(() => {
+      let result = entities();
+      
+      // Apply filters
+      const f = filters();
+      if (f.search) {
+        result = result.filter(e => 
+          e.name.toLowerCase().includes(f.search!.toLowerCase())
+        );
+      }
+      
+      // Apply sorting
+      const s = sorting();
+      result = [...result].sort((a, b) => {
+        const aVal = a[s.field];
+        const bVal = b[s.field];
+        return s.order === 'asc' 
+          ? aVal > bVal ? 1 : -1
+          : aVal < bVal ? 1 : -1;
+      });
+      
+      return result;
+    }),
+    
+    // Boolean computed
+    hasSelection: computed(() => selectedId() !== null),
+    isEmpty: computed(() => entities().length === 0)
   })),
   
+  // Methods (Mutations + Effects)
   withMethods((store, service = inject(FeatureService)) => ({
+    // Simple mutation
     selectEntity(id: string | null) {
       patchState(store, { selectedId: id });
     },
     
+    // Mutation with transformation
+    setFilters(filters: Partial<Filters>) {
+      patchState(store, (state) => ({
+        filters: { ...state.filters, ...filters }
+      }));
+    },
+    
+    // Async effect with rxMethod
     loadEntities: rxMethod<string>(
       pipe(
+        // Set loading state
         tap(() => patchState(store, { loading: true, error: null })),
-        switchMap((id) => service.getEntities(id)),
+        
+        // Call service
+        switchMap((workspaceId) => service.getEntities(workspaceId)),
+        
+        // Handle response
         tapResponse({
-          next: (entities) => patchState(store, { entities, loading: false }),
+          next: (entities) => patchState(store, { 
+            entities, 
+            loading: false 
+          }),
           error: (error: Error) => patchState(store, { 
             error: error.message, 
             loading: false 
           })
         })
       )
+    ),
+    
+    // Optimistic update
+    addEntity: rxMethod<Entity>(
+      pipe(
+        tap((entity) => {
+          // Optimistically add to state
+          patchState(store, (state) => ({
+            entities: [...state.entities, entity]
+          }));
+        }),
+        switchMap((entity) => service.createEntity(entity)),
+        tapResponse({
+          next: (savedEntity) => {
+            // Replace optimistic entity with saved one
+            patchState(store, (state) => ({
+              entities: state.entities.map(e => 
+                e.id === savedEntity.id ? savedEntity : e
+              )
+            }));
+          },
+          error: (error: Error) => {
+            // Rollback on error
+            patchState(store, (state) => ({
+              entities: state.entities.filter(e => e.id !== entity.id),
+              error: error.message
+            }));
+          }
+        })
+      )
     )
   })),
   
+  // Lifecycle Hooks
   withHooks({
     onInit(store) {
-      // Auto-load on init if needed
+      // Auto-load on init
+      const contextStore = inject(ContextStore);
+      effect(() => {
+        const workspaceId = contextStore.currentWorkspaceId();
+        if (workspaceId) {
+          store.loadEntities(workspaceId);
+        }
+      });
+    },
+    
+    onDestroy() {
+      // Cleanup if needed
+      console.log('Store destroyed');
     }
   })
 );

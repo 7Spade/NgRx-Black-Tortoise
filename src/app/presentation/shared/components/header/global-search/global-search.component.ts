@@ -4,11 +4,13 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs/operators';
 import { WorkspaceStore } from '@application/workspace/stores/workspace.store';
 import { BREAKPOINTS } from '@shared/constants/breakpoints.constant';
+import { SearchDialogComponent } from '../../dialogs/search-dialog/search-dialog.component';
 
 /**
  * Global Search Component
@@ -39,6 +41,7 @@ import { BREAKPOINTS } from '@shared/constants/breakpoints.constant';
 export class GlobalSearchComponent {
   private breakpointObserver = inject(BreakpointObserver);
   private workspaceStore = inject(WorkspaceStore);
+  private dialog = inject(MatDialog);
 
   // Responsive visibility
   private isHandsetOrTablet = toSignal(
@@ -54,11 +57,16 @@ export class GlobalSearchComponent {
 
   /**
    * Opens the search dialog/overlay
-   * TODO: Implement full search dialog with results
    */
   openSearch(): void {
-    // Placeholder for future search dialog implementation
-    console.log('Opening search with query:', this.searchQuery());
+    this.dialog.open(SearchDialogComponent, {
+      width: '600px',
+      maxWidth: '90vw',
+      maxHeight: '80vh',
+      panelClass: 'search-dialog-panel',
+      autoFocus: true,
+      restoreFocus: true
+    });
   }
 
   /**

@@ -1,62 +1,92 @@
 ---
-applyTo: '.github/workflows/*.yml,.github/workflows/*.yaml'
-description: 'Comprehensive guide for building robust, secure, and efficient CI/CD pipelines using GitHub Actions. Covers workflow structure, jobs, steps, environment variables, secret management, caching, matrix strategies, testing, and deployment strategies.'
+description: 'Configuration for AI behavior when implementing GitHub Actions CI/CD pipelines for Angular applications'
+applyTo: '**'
 ---
 
-# Modern Angular CI/CD Pipeline Guidelines
+# GitHub Actions CI/CD Rules for Angular
+Configuration for AI behavior when implementing CI/CD pipelines
 
-## 1. Workflow Architecture & Technology Stack
-
-- Use **GitHub Actions** to implement CI/CD for Angular 20+ projects.
-- The pipeline should support:
-  - **Material Design 3 + Angular Material/CDK** for UI consistency
-  - **NgRx Signals + AngularFire** for state and data management
+## CRITICAL: Before creating ANY workflow
+- YOU MUST implement CI/CD using **GitHub Actions** for Angular 20+ projects
+- Pipeline MUST support:
+  - `Material Design 3 + Angular Material/CDK` for UI
+  - `NgRx Signals + AngularFire` for state/data management
   - Zone-less, fully reactive architecture
-- Workflows should be modular, reusable, and maintainable.
+- Workflows MUST be modular, reusable, and maintainable
+- > NOTE: Follow Single Responsibility Principle (SRP) for each workflow and job
 
-## 2. Core Design Principles
+## When designing workflow architecture
+- Strictly follow **SRP** for workflows and jobs
+- Ensure **clear separation of concerns**:
+  - Build jobs separate from test jobs
+  - Test jobs separate from deployment jobs
+  - Linting separate from compilation
+- Maintain **consistent naming**:
+  - Workflows: `build-and-test.yml`, `deploy-prod.yml`
+  - Jobs: descriptive names (`build`, `unit-test`, `e2e-test`, `deploy`)
+- Refactor IMMEDIATELY if job blocks clarity or efficiency
 
-- Strictly follow **Single Responsibility Principle (SRP)** for each workflow and job.
-- Ensure **clear separation of concerns** between build, test, and deployment steps.
-- Maintain **consistent naming and folder structure** for workflows.
-- Refactor steps immediately if an existing job or action blocks clarity or efficiency.
+## CRITICAL: Requirement analysis before implementation
+- Translate needs into **atomic, verifiable pipeline steps**
+- Use **sequential reasoning** for job execution order
+- Any uncertainty MUST be clarified using official documentation
+- MUST NOT implement steps without 100% correctness validation
 
-## 3. Requirement Analysis & Validation
-
-- Translate user/developer needs into **atomic, verifiable pipeline steps**.
-- Use **sequential reasoning** to ensure jobs execute in a logical, validated order.
-- Any uncertainty should be clarified using official documentation or context references.
-
-## 4. Planning & Task Decomposition
-
-- Decompose the CI/CD process into:
+## When decomposing CI/CD tasks
+- Break down into three types:
   - **Atomic tasks**: single responsibility, small steps
-  - **Sequential tasks**: jobs executed in order via `needs`
+  - **Sequential tasks**: use `needs` for execution order
   - **Actionable steps**: explicit commands with defined outputs
-- Only implement steps after confirming **100% correctness in simulation or dry-run**.
+- EXAMPLE:
+  - After: Requirement "deploy to production after tests pass"
+  - Do: Create jobs: `build` → `test` → `deploy` with `needs` dependencies
+  - Before: Implementing any workflow code
 
-## 5. Implementation Guidelines
+## CRITICAL: Implementation standards
+- Jobs MUST be concise, deterministic, and reproducible
+- Use official actions:
+  - `actions/checkout`: for source code
+  - `actions/setup-node`: for Node environment  
+  - `firebase/actions` or similar: for deployment
+  - `actions/cache`: for dependency caching
+- Environment variables and secrets MUST be managed via GitHub repository secrets
+- MUST NOT hardcode any secrets or credentials
+- > NOTE: All secrets should use `${{ secrets.SECRET_NAME }}` syntax
 
-- Jobs must be **concise, deterministic, and reproducible**.
-- Use official actions whenever possible:
-  - `actions/checkout` for source code
-  - `actions/setup-node` for Node environment
-  - `firebase/actions` or similar for deployment
-- Integrate caching to optimize build times (`actions/cache`).
-- Environment variables and secrets should be **managed via GitHub repository secrets**, never hardcoded.
+## When ensuring build quality
+- MUST ensure **TypeScript compiles cleanly** with `tsc --noEmit`
+- MUST verify **Angular AOT builds** succeed
+- MUST run **unit and integration tests** automatically
+- Linting and formatting MUST pass before merging:
+  - Run `eslint` for code quality
+  - Run `prettier` for code formatting
+- All quality gates MUST be enforced in CI
 
-## 6. Build & Quality Assurance
+## When optimizing performance
+- Integrate caching with `actions/cache`:
+  - Cache `node_modules` based on `package-lock.json` hash
+  - Cache build artifacts when appropriate
+  - Set proper cache keys and restore keys
+- Use matrix strategies for parallel testing
+- Minimize workflow execution time
 
-- Ensure **TypeScript compiles cleanly** in CI (`tsc --noEmit`).
-- Verify **Angular AOT builds** successfully.
-- Run **unit and integration tests** automatically.
-- Linting and formatting must pass before merging (`eslint`, `prettier`).
+## When documenting pipelines
+- Log pipeline outcomes and failed steps
+- Maintain structured documentation:
+  - Job purpose and responsibilities
+  - Dependencies between jobs
+  - Environment setup requirements
+- Accumulate context for future automation and error prevention
+- > NOTE: Documentation helps with troubleshooting and onboarding
 
-## 7. Knowledge Accumulation & Pipeline Memory
-
-- Log pipeline outcomes and any failed steps.
-- Maintain structured documentation for workflows:
-  - Job purpose
-  - Dependencies
-  - Environment setup
-- Accumulate context for **future automation, error prevention, and process optimization**.
+## General
+- Use GitHub Actions for all CI/CD
+- Support Angular 20+ with modern architecture
+- Follow SRP for workflows and jobs
+- Ensure clear separation of concerns
+- Use official actions from marketplace
+- Manage secrets via repository secrets
+- Cache dependencies for performance
+- Enforce all quality gates in CI
+- Document pipeline structure and requirements
+- Validate correctness before implementation

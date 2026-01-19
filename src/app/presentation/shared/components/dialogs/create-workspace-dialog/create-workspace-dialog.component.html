@@ -1,0 +1,101 @@
+<div class="create-workspace-dialog">
+  <!-- Header -->
+  <div class="dialog-header">
+    <h2 mat-dialog-title>Create New Workspace</h2>
+    <button
+      mat-icon-button
+      class="close-button"
+      (click)="closeDialog()"
+      aria-label="Close dialog">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Content -->
+  <mat-dialog-content>
+    <form [formGroup]="workspaceForm" class="workspace-form">
+      <!-- Workspace Name -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Workspace Name</mat-label>
+        <input
+          matInput
+          formControlName="name"
+          placeholder="e.g., my-team-workspace"
+          required
+          maxlength="50" />
+        <mat-icon matPrefix>folder</mat-icon>
+        @if (workspaceForm.get('name')?.invalid && workspaceForm.get('name')?.touched) {
+          <mat-error>{{ getErrorMessage('name') }}</mat-error>
+        }
+        <mat-hint align="end">
+          {{ workspaceForm.get('name')?.value?.length || 0 }}/50
+        </mat-hint>
+      </mat-form-field>
+
+      <!-- Display Name -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Display Name</mat-label>
+        <input
+          matInput
+          formControlName="displayName"
+          placeholder="e.g., My Team Workspace"
+          required
+          maxlength="50" />
+        <mat-icon matPrefix>label</mat-icon>
+        @if (workspaceForm.get('displayName')?.invalid && workspaceForm.get('displayName')?.touched) {
+          <mat-error>{{ getErrorMessage('displayName') }}</mat-error>
+        }
+        <mat-hint align="end">
+          {{ workspaceForm.get('displayName')?.value?.length || 0 }}/50
+        </mat-hint>
+      </mat-form-field>
+
+      <!-- Description -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Description (Optional)</mat-label>
+        <textarea
+          matInput
+          formControlName="description"
+          placeholder="What is this workspace for?"
+          rows="3"
+          maxlength="200"></textarea>
+        <mat-icon matPrefix>description</mat-icon>
+        @if (workspaceForm.get('description')?.invalid && workspaceForm.get('description')?.touched) {
+          <mat-error>{{ getErrorMessage('description') }}</mat-error>
+        }
+        <mat-hint align="end">
+          {{ workspaceForm.get('description')?.value?.length || 0 }}/200
+        </mat-hint>
+      </mat-form-field>
+
+      <!-- Error Message -->
+      @if (error()) {
+        <div class="error-message">
+          <mat-icon>error</mat-icon>
+          <span>{{ error() }}</span>
+        </div>
+      }
+    </form>
+  </mat-dialog-content>
+
+  <!-- Actions -->
+  <mat-dialog-actions align="end">
+    <button
+      mat-button
+      (click)="closeDialog()"
+      [disabled]="isSubmitting()">
+      Cancel
+    </button>
+    <button
+      mat-raised-button
+      color="primary"
+      (click)="createWorkspace()"
+      [disabled]="workspaceForm.invalid || isSubmitting()">
+      @if (isSubmitting()) {
+        <span>Creating...</span>
+      } @else {
+        <span>Create Workspace</span>
+      }
+    </button>
+  </mat-dialog-actions>
+</div>
