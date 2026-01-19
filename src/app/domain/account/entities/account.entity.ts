@@ -1,241 +1,88 @@
 /**
- * Account Entity
+ * Account Type Definitions
  * 
  * DOMAIN LAYER - PURE TYPESCRIPT
  * ===============================
  * NO Angular, RxJS, or Firebase dependencies allowed.
  * 
- * Account represents the base identity in the system.
- * It serves as a discriminated union for all identity types.
+ * This file contains ONLY type aliases and type guards.
+ * Actual entity definitions are in their respective entity files:
+ * - Organization: domain/organization/entities/organization.entity.ts
+ * - Bot: domain/bot/entities/bot.entity.ts
+ * - Team: domain/team/entities/team.entity.ts
+ * - Partner: domain/partner/entities/partner.entity.ts
  * 
- * Identity Types:
- * - User: Personal user account (can own workspaces)
- * - Organization: Organizational account (can own workspaces)
- * - Bot: Service account (cannot own workspaces)
- * - Team: Internal organizational unit (cannot own workspaces, has members)
- * - Partner: External organizational unit (cannot own workspaces, has members)
+ * Identity Layer (can authenticate):
+ * - 'user' | 'organization' | 'bot'
+ * 
+ * Membership Layer (relationship constructs):
+ * - 'team' | 'partner'
+ * 
+ * Workspace Ownership:
+ * - Only 'user' | 'organization' can own workspaces
  */
 
 /**
- * Account type discriminator
- * Used for UI display and account switching
+ * Account Type - Union of all account types for UI switching
+ * 
+ * This is used ONLY for UI display and account switcher.
+ * For domain logic, use IdentityType or MembershipType instead.
  */
 export type AccountType = 'user' | 'organization' | 'bot' | 'team' | 'partner';
 
 /**
- * Identity types - accounts that can authenticate
- * User and Organization can own workspaces
- * Bot is an identity but cannot own workspaces
+ * Identity Type - Accounts that can authenticate
+ * 
+ * Identities have credentials and can authenticate:
+ * - 'user': Personal user account (CAN own workspaces)
+ * - 'organization': Organizational account (CAN own workspaces)
+ * - 'bot': Service account (CANNOT own workspaces)
  */
 export type IdentityType = 'user' | 'organization' | 'bot';
 
 /**
- * Membership types - relationship constructs that belong to organizations
- * Cannot own workspaces, must have organizationId
+ * Membership Type - Relationship constructs
+ * 
+ * Memberships belong to organizations and CANNOT authenticate:
+ * - 'team': Internal organizational unit (CANNOT own workspaces)
+ * - 'partner': External organizational unit (CANNOT own workspaces)
  */
 export type MembershipType = 'team' | 'partner';
 
 /**
- * Base Account interface
- * All account types extend this base structure
+ * Workspace Owner Type - Types that can own workspaces
+ * 
+ * Only User and Organization can own workspaces.
+ * Bot, Team, and Partner CANNOT own workspaces.
  */
-export interface BaseAccount {
-  readonly id: string;
-  readonly type: AccountType;
-  
-  // Display information
-  displayName: string;
-  email?: string;
-  photoURL?: string;
-  
-  // Metadata
-  createdAt: Date;
-  updatedAt: Date;
-  
-  // Status
-  active: boolean;
-}
+export type WorkspaceOwnerType = 'user' | 'organization';
 
 /**
- * User Account (Personal Identity)
- * Can own workspaces
- */
-export interface UserAccount extends BaseAccount {
-  type: 'user';
-  
-  // User-specific fields
-  firstName?: string;
-  lastName?: string;
-  bio?: string;
-  phoneNumber?: string;
-  
-  // Preferences
-  locale?: string;
-  timezone?: string;
-}
-
-/**
- * Organization Account (Organizational Identity)
- * Can own workspaces
- * Has members (referenced by ID)
- */
-export interface OrganizationAccount extends BaseAccount {
-  type: 'organization';
-  
-  // Organization-specific fields
-  description?: string;
-  industry?: string;
-  size?: 'small' | 'medium' | 'large' | 'enterprise';
-  website?: string;
-  
-  // Member management (IDs only, no nested objects)
-  memberIds: string[];
-  ownerIds: string[]; // Organization owners (User IDs)
-  
-  // Settings
-  settings?: {
-    allowPublicWorkspaces?: boolean;
-    requireMFA?: boolean;
-  };
-}
-
-/**
- * Bot Account (Service Identity)
- * Cannot own workspaces
- */
-export interface BotAccount extends BaseAccount {
-  type: 'bot';
-  
-  // Bot-specific fields
-  apiKey?: string;
-  permissions: string[];
-  createdBy: string; // User ID who created the bot
-  
-  // Rate limiting
-  rateLimitTier?: 'free' | 'basic' | 'premium';
-}
-
-/**
- * Team Account (Internal Organizational Unit)
- * Cannot own workspaces - Teams belong to Organizations
- * Has members (referenced by ID)
- */
-export interface TeamAccount extends BaseAccount {
-  type: 'team';
-  
-  // Team belongs to an organization
-  organizationId: string;
-  
-  // Team-specific fields
-  description?: string;
-  color?: string;
-  
-  // Member management (IDs only, no nested objects)
-  memberIds: string[];
-  leadIds: string[]; // Team leads (User IDs)
-  
-  // Workspace access (referenced by ID)
-  workspaceIds: string[]; // Workspaces this team has access to
-}
-
-/**
- * Partner Account (External Organizational Unit)
- * Cannot own workspaces - Partners collaborate with Organizations
- * Has members (referenced by ID)
- */
-export interface PartnerAccount extends BaseAccount {
-  type: 'partner';
-  
-  // Partner collaborates with an organization
-  organizationId: string;
-  
-  // Partner-specific fields
-  companyName: string;
-  contactPerson?: string;
-  partnershipType?: 'vendor' | 'client' | 'contractor' | 'collaborator';
-  contractStartDate?: Date;
-  contractEndDate?: Date;
-  
-  // Member management (IDs only, no nested objects)
-  memberIds: string[];
-  
-  // Workspace access (referenced by ID)
-  workspaceIds: string[]; // Workspaces this partner has access to
-  
-  // Access level
-  accessLevel?: 'read' | 'write' | 'admin';
-}
-
-/**
- * Account discriminated union
- * TypeScript will enforce type safety based on the 'type' field
- */
-export type Account = 
-  | UserAccount 
-  | OrganizationAccount 
-  | BotAccount 
-  | TeamAccount 
-  | PartnerAccount;
-
-/**
- * Type guards for runtime type checking
- */
-export function isUserAccount(account: Account): account is UserAccount {
-  return account.type === 'user';
-}
-
-export function isOrganizationAccount(account: Account): account is OrganizationAccount {
-  return account.type === 'organization';
-}
-
-export function isBotAccount(account: Account): account is BotAccount {
-  return account.type === 'bot';
-}
-
-export function isTeamAccount(account: Account): account is TeamAccount {
-  return account.type === 'team';
-}
-
-export function isPartnerAccount(account: Account): account is PartnerAccount {
-  return account.type === 'partner';
-}
-
-/**
- * Type guard for identity types
- * Identities can authenticate and have credentials
+ * Type guard: Check if type is an identity
+ * 
+ * Returns true for: 'user', 'organization', 'bot'
+ * Returns false for: 'team', 'partner'
  */
 export function isIdentityType(type: AccountType): type is IdentityType {
   return type === 'user' || type === 'organization' || type === 'bot';
 }
 
 /**
- * Type guard for membership types
- * Memberships are relationship constructs belonging to organizations
+ * Type guard: Check if type is a membership
+ * 
+ * Returns true for: 'team', 'partner'
+ * Returns false for: 'user', 'organization', 'bot'
  */
 export function isMembershipType(type: AccountType): type is MembershipType {
   return type === 'team' || type === 'partner';
 }
 
 /**
- * Type guard for accounts that can own workspaces
- * Only User and Organization accounts can own workspaces
+ * Type guard: Check if type can own workspaces
+ * 
+ * Returns true for: 'user', 'organization'
+ * Returns false for: 'bot', 'team', 'partner'
  */
-export function canOwnWorkspace(account: Account): account is UserAccount | OrganizationAccount {
-  return account.type === 'user' || account.type === 'organization';
-}
-
-/**
- * Type guard for accounts that have members
- * Organization, Team, and Partner accounts have member lists
- */
-export function hasMemberList(account: Account): account is OrganizationAccount | TeamAccount | PartnerAccount {
-  return account.type === 'organization' || account.type === 'team' || account.type === 'partner';
-}
-
-/**
- * Type guard for accounts that belong to an organization
- * Team and Partner accounts belong to organizations
- */
-export function belongsToOrganization(account: Account): account is TeamAccount | PartnerAccount {
-  return account.type === 'team' || account.type === 'partner';
+export function canOwnWorkspace(type: AccountType): type is WorkspaceOwnerType {
+  return type === 'user' || type === 'organization';
 }
