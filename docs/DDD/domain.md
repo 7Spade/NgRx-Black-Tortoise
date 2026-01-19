@@ -7,113 +7,105 @@
 ```
 src/app/domain/
 │
-├── shared/                                    # 共享領域概念
-│   ├── value-objects/                        # 值物件
-│   │   ├── id.value-object.ts               # 通用 ID 值物件
-│   │   ├── email.value-object.ts            # Email 值物件
-│   │   ├── slug.value-object.ts             # Slug 值物件
-│   │   ├── timestamp.value-object.ts        # 時間戳值物件
+├── shared/
+│   ├── value-objects/
+│   │   ├── id.value-object.ts
+│   │   ├── email.value-object.ts
+│   │   ├── slug.value-object.ts
+│   │   ├── timestamp.value-object.ts
 │   │   └── index.ts
 │   │
-│   ├── enums/                                # 列舉
-│   │   ├── lifecycle-status.enum.ts         # 生命週期狀態
-│   │   ├── index.ts
-│   │   └── types.ts
-│   │
-│   ├── interfaces/                           # 共享介面
-│   │   ├── identifiable.interface.ts        # 可識別介面
-│   │   ├── auditable.interface.ts           # 可審計介面
-│   │   ├── versionable.interface.ts         # 可版本化介面
+│   ├── enums/
+│   │   ├── lifecycle-status.enum.ts
 │   │   └── index.ts
 │   │
-│   └── errors/                               # 領域錯誤
-│       ├── domain.error.ts                   # 基礎領域錯誤
-│       ├── validation.error.ts              # 驗證錯誤
-│       ├── authorization.error.ts           # 授權錯誤
+│   ├── interfaces/
+│   │   ├── identifiable.interface.ts
+│   │   ├── auditable.interface.ts
+│   │   ├── versionable.interface.ts
+│   │   └── index.ts
+│   │
+│   └── errors/
+│       ├── domain.error.ts
+│       ├── validation.error.ts
+│       ├── authorization.error.ts
 │       └── index.ts
 │
-├── account/                                   # Account 身份層領域
-│   ├── entities/                             # 實體
-│   │   ├── account.entity.ts                # Account 實體基類
-│   │   ├── user.entity.ts                   # User 實體
-│   │   ├── organization.entity.ts           # Organization 實體
-│   │   ├── bot.entity.ts                    # Bot 實體
-│   │   ├── sub-unit.entity.ts               # SubUnit 實體基類
-│   │   ├── team.entity.ts                   # Team 實體
-│   │   ├── partner.entity.ts                # Partner 實體
+├── identity/                                # Identity = 可驗證 / 可登入
+│   ├── entities/
+│   │   ├── user.entity.ts
+│   │   ├── organization.entity.ts
+│   │   ├── bot.entity.ts
 │   │   └── index.ts
 │   │
-│   ├── value-objects/                        # 值物件
-│   │   ├── account-id.value-object.ts       # AccountId
-│   │   ├── profile.value-object.ts          # Profile
-│   │   ├── preferences.value-object.ts      # Preferences
-│   │   ├── domain.value-object.ts           # Domain
-│   │   ├── branding.value-object.ts         # Branding
-│   │   ├── api-key.value-object.ts          # ApiKey
+│   ├── value-objects/
+│   │   ├── identity-id.value-object.ts
+│   │   ├── profile.value-object.ts
+│   │   ├── preferences.value-object.ts
+│   │   ├── domain.value-object.ts
+│   │   ├── branding.value-object.ts
 │   │   └── index.ts
 │   │
-│   ├── enums/                                # 列舉
-│   │   ├── account-type.enum.ts             # AccountType
+│   ├── identity.types.ts                   # 唯一 IdentityType 定義
+│   └── index.ts
+│
+├── membership/                              # NON-identity（只描述關係）
+│   ├── entities/
+│   │   ├── organization-membership.entity.ts
+│   │   ├── team.entity.ts
+│   │   ├── partner.entity.ts
+│   │   └── index.ts
+│   │
+│   ├── value-objects/
+│   │   ├── membership-id.value-object.ts
+│   │   ├── permissions.value-object.ts
+│   │   └── index.ts
+│   │
+│   ├── enums/
+│   │   ├── membership-role.enum.ts
+│   │   ├── membership-status.enum.ts
 │   │   └── index.ts
 │   │
 │   └── index.ts
 │
-├── workspace-membership/                      # 工作區成員關係領域
-│   ├── entities/                             # 實體
-│   │   ├── workspace-membership.entity.ts   # WorkspaceMembership 實體
+├── workspace/
+│   ├── entities/
+│   │   ├── workspace.entity.ts
 │   │   └── index.ts
 │   │
-│   ├── value-objects/                        # 值物件
-│   │   ├── membership-id.value-object.ts    # MembershipId
-│   │   ├── permissions.value-object.ts      # Permissions
+│   ├── value-objects/
+│   │   ├── workspace-id.value-object.ts
+│   │   ├── workspace-owner.value-object.ts
+│   │   ├── workspace-quota.value-object.ts
 │   │   └── index.ts
 │   │
-│   ├── enums/                                # 列舉
-│   │   ├── membership-role.enum.ts          # MembershipRole
-│   │   ├── membership-status.enum.ts        # MembershipStatus
+│   ├── enums/
+│   │   ├── workspace-lifecycle.enum.ts
 │   │   └── index.ts
 │   │
-│   └── index.ts
-│
-├── workspace/                                 # Workspace 工作區層領域
-│   ├── entities/                             # 實體
-│   │   ├── workspace.entity.ts              # Workspace 實體
-│   │   └── index.ts
-│   │
-│   ├── value-objects/                        # 值物件
-│   │   ├── workspace-id.value-object.ts     # WorkspaceId
-│   │   ├── workspace-identity.value-object.ts # WorkspaceIdentity
-│   │   ├── workspace-quota.value-object.ts  # WorkspaceQuota
-│   │   └── index.ts
-│   │
-│   ├── enums/                                # 列舉
-│   │   ├── workspace-type.enum.ts           # WorkspaceType
-│   │   ├── workspace-lifecycle.enum.ts      # WorkspaceLifecycle
-│   │   └── index.ts
-│   │
-│   ├── aggregates/                           # 聚合根
-│   │   ├── workspace.aggregate.ts           # Workspace 聚合
+│   ├── aggregates/
+│   │   ├── workspace.aggregate.ts
 │   │   └── index.ts
 │   │
 │   └── index.ts
 │
-├── modules/                                   # Module 功能模組層領域
-│   ├── shared/                               # 模組共享
+├── modules/
+│   ├── shared/
 │   │   ├── enums/
-│   │   │   ├── module-type.enum.ts          # ModuleType (overview | documents | tasks...)
-│   │   │   ├── module-visibility.enum.ts    # ModuleVisibility
+│   │   │   ├── module-type.enum.ts
+│   │   │   ├── module-visibility.enum.ts
 │   │   │   └── index.ts
 │   │   │
 │   │   ├── value-objects/
-│   │   │   ├── module-id.value-object.ts    # ModuleId
-│   │   │   ├── module-permission.value-object.ts # ModulePermission
+│   │   │   ├── module-id.value-object.ts
+│   │   │   ├── module-permission.value-object.ts
 │   │   │   └── index.ts
 │   │   │
 │   │   └── index.ts
 │   │
-│   ├── overview/                             # Overview 模組
+│   ├── overview/
 │   │   ├── entities/
-│   │   │   ├── dashboard.entity.ts          # Dashboard 實體
+│   │   │   ├── dashboard.entity.ts
 │   │   │   └── index.ts
 │   │   │
 │   │   ├── value-objects/
@@ -123,11 +115,11 @@ src/app/domain/
 │   │   │
 │   │   └── index.ts
 │   │
-│   ├── documents/                            # Documents 模組
+│   ├── documents/
 │   │   ├── entities/
-│   │   │   ├── document.entity.ts           # Document 實體
-│   │   │   ├── folder.entity.ts             # Folder 實體
-│   │   │   ├── document-version.entity.ts   # DocumentVersion 實體
+│   │   │   ├── document.entity.ts
+│   │   │   ├── folder.entity.ts
+│   │   │   ├── document-version.entity.ts
 │   │   │   └── index.ts
 │   │   │
 │   │   ├── value-objects/
@@ -144,301 +136,236 @@ src/app/domain/
 │   │   │
 │   │   └── index.ts
 │   │
-│   ├── tasks/                                # Tasks 模組
+│   ├── tasks/
 │   │   ├── entities/
-│   │   │   ├── task.entity.ts               # Task 實體
-│   │   │   ├── subtask.entity.ts            # Subtask 實體
-│   │   │   ├── workflow.entity.ts           # Workflow 實體
+│   │   │   ├── task.entity.ts
+│   │   │   ├── subtask.entity.ts
+│   │   │   ├── workflow.entity.ts
 │   │   │   └── index.ts
 │   │   │
 │   │   ├── value-objects/
 │   │   │   ├── task-id.value-object.ts
-│   │   │   ├── assignment.value-object.ts   # Assignment
-│   │   │   ├── deadline.value-object.ts     # Deadline
-│   │   │   ├── priority.value-object.ts     # Priority
+│   │   │   ├── assignment.value-object.ts
+│   │   │   ├── deadline.value-object.ts
+│   │   │   ├── priority.value-object.ts
 │   │   │   └── index.ts
 │   │   │
 │   │   ├── enums/
-│   │   │   ├── task-status.enum.ts          # TaskStatus
-│   │   │   ├── priority-level.enum.ts       # PriorityLevel
+│   │   │   ├── task-status.enum.ts
+│   │   │   ├── priority-level.enum.ts
 │   │   │   └── index.ts
 │   │   │
 │   │   ├── aggregates/
-│   │   │   ├── task.aggregate.ts            # Task 聚合
-│   │   │   └── index.ts
-│   │   │
-│   │   └── index.ts
-│   │
-│   ├── members/                              # Members 模組
-│   │   ├── entities/
-│   │   │   ├── member.entity.ts             # Member 實體
-│   │   │   ├── invitation.entity.ts         # Invitation 實體
-│   │   │   └── index.ts
-│   │   │
-│   │   ├── value-objects/
-│   │   │   ├── member-id.value-object.ts
-│   │   │   ├── invitation-link.value-object.ts
-│   │   │   └── index.ts
-│   │   │
-│   │   ├── enums/
-│   │   │   ├── invitation-status.enum.ts
-│   │   │   └── index.ts
-│   │   │
-│   │   └── index.ts
-│   │
-│   ├── permissions/                          # Permissions 模組
-│   │   ├── entities/
-│   │   │   ├── role.entity.ts               # Role 實體
-│   │   │   ├── policy.entity.ts             # Policy 實體
-│   │   │   └── index.ts
-│   │   │
-│   │   ├── value-objects/
-│   │   │   ├── role-id.value-object.ts
-│   │   │   ├── policy-id.value-object.ts
-│   │   │   ├── permission-scope.value-object.ts
-│   │   │   ├── permission-override.value-object.ts
-│   │   │   └── index.ts
-│   │   │
-│   │   ├── enums/
-│   │   │   ├── permission-action.enum.ts    # Read | Write | Admin | Custom
-│   │   │   └── index.ts
-│   │   │
-│   │   └── index.ts
-│   │
-│   ├── audit/                                # Audit 模組
-│   │   ├── entities/
-│   │   │   ├── audit-log.entity.ts          # AuditLog 實體
-│   │   │   └── index.ts
-│   │   │
-│   │   ├── value-objects/
-│   │   │   ├── audit-log-id.value-object.ts
-│   │   │   ├── audit-metadata.value-object.ts
-│   │   │   ├── retention-policy.value-object.ts
-│   │   │   └── index.ts
-│   │   │
-│   │   ├── enums/
-│   │   │   ├── audit-event-type.enum.ts
-│   │   │   ├── audit-severity.enum.ts
-│   │   │   └── index.ts
-│   │   │
-│   │   └── index.ts
-│   │
-│   ├── settings/                             # Settings 模組
-│   │   ├── entities/
-│   │   │   ├── workspace-setting.entity.ts  # WorkspaceSetting 實體
-│   │   │   ├── feature-flag.entity.ts       # FeatureFlag 實體
-│   │   │   └── index.ts
-│   │   │
-│   │   ├── value-objects/
-│   │   │   ├── setting-id.value-object.ts
-│   │   │   ├── integration-config.value-object.ts
-│   │   │   └── index.ts
-│   │   │
-│   │   └── index.ts
-│   │
-│   ├── journal/                              # Journal 模組
-│   │   ├── entities/
-│   │   │   ├── journal-entry.entity.ts      # JournalEntry 實體
-│   │   │   ├── activity.entity.ts           # Activity 實體
-│   │   │   └── index.ts
-│   │   │
-│   │   ├── value-objects/
-│   │   │   ├── journal-entry-id.value-object.ts
-│   │   │   ├── activity-metadata.value-object.ts
-│   │   │   └── index.ts
-│   │   │
-│   │   ├── enums/
-│   │   │   ├── activity-type.enum.ts
+│   │   │   ├── task.aggregate.ts
 │   │   │   └── index.ts
 │   │   │
 │   │   └── index.ts
 │   │
 │   └── index.ts
 │
-├── events/                                    # 事件系統領域
-│   ├── base/                                 # 基礎事件
-│   │   ├── domain-event.base.ts             # 領域事件基類
-│   │   ├── event-metadata.ts                # 事件元數據
+├── events/
+│   ├── base/
+│   │   ├── domain-event.base.ts
+│   │   ├── event-metadata.ts
 │   │   └── index.ts
 │   │
-│   ├── account/                              # Account 事件
-│   │   ├── account-created.event.ts
-│   │   ├── account-updated.event.ts
-│   │   ├── account-deleted.event.ts
+│   ├── identity/
+│   │   ├── identity-created.event.ts
+│   │   ├── identity-updated.event.ts
 │   │   └── index.ts
 │   │
-│   ├── workspace/                            # Workspace 事件
+│   ├── workspace/
 │   │   ├── workspace-created.event.ts
 │   │   ├── workspace-updated.event.ts
 │   │   ├── workspace-archived.event.ts
 │   │   ├── workspace-deleted.event.ts
-│   │   ├── member-joined.event.ts
-│   │   ├── member-left.event.ts
-│   │   ├── ownership-transferred.event.ts
-│   │   └── index.ts
-│   │
-│   ├── tasks/                                # Task 事件
-│   │   ├── task-created.event.ts
-│   │   ├── task-updated.event.ts
-│   │   ├── task-status-changed.event.ts
-│   │   ├── task-assigned.event.ts
-│   │   ├── task-completed.event.ts
-│   │   └── index.ts
-│   │
-│   ├── documents/                            # Document 事件
-│   │   ├── document-created.event.ts
-│   │   ├── document-updated.event.ts
-│   │   ├── document-shared.event.ts
-│   │   ├── document-version-created.event.ts
 │   │   └── index.ts
 │   │
 │   └── index.ts
 │
-├── commands/                                  # 命令領域
-│   ├── base/                                 # 基礎命令
-│   │   ├── command.base.ts                  # 命令基類
-│   │   ├── command-result.ts                # 命令結果
+├── commands/
+│   ├── base/
+│   │   ├── command.base.ts
+│   │   ├── command-result.ts
 │   │   └── index.ts
 │   │
-│   ├── workspace/                            # Workspace 命令
+│   ├── workspace/
 │   │   ├── create-workspace.command.ts
 │   │   ├── update-workspace.command.ts
 │   │   ├── archive-workspace.command.ts
-│   │   ├── invite-member.command.ts
-│   │   └── index.ts
-│   │
-│   ├── tasks/                                # Task 命令
-│   │   ├── create-task.command.ts
-│   │   ├── update-task.command.ts
-│   │   ├── assign-task.command.ts
-│   │   ├── complete-task.command.ts
-│   │   └── index.ts
-│   │
-│   ├── documents/                            # Document 命令
-│   │   ├── create-document.command.ts
-│   │   ├── update-document.command.ts
-│   │   ├── share-document.command.ts
 │   │   └── index.ts
 │   │
 │   └── index.ts
 │
-├── queries/                                   # 查詢領域
-│   ├── base/                                 # 基礎查詢
-│   │   ├── query.base.ts                    # 查詢基類
-│   │   ├── query-result.ts                  # 查詢結果
-│   │   ├── pagination.ts                    # 分頁
+├── queries/
+│   ├── base/
+│   │   ├── query.base.ts
+│   │   ├── query-result.ts
+│   │   ├── pagination.ts
 │   │   └── index.ts
 │   │
-│   ├── workspace/                            # Workspace 查詢
+│   ├── workspace/
 │   │   ├── get-workspace.query.ts
 │   │   ├── list-workspaces.query.ts
-│   │   ├── get-workspace-members.query.ts
-│   │   └── index.ts
-│   │
-│   ├── tasks/                                # Task 查詢
-│   │   ├── get-task.query.ts
-│   │   ├── list-tasks.query.ts
-│   │   ├── get-task-by-status.query.ts
 │   │   └── index.ts
 │   │
 │   └── index.ts
 │
-├── repositories/                              # 儲存庫介面
-│   ├── account.repository.interface.ts
+├── repositories/
+│   ├── identity.repository.interface.ts
+│   ├── membership.repository.interface.ts
 │   ├── workspace.repository.interface.ts
-│   ├── workspace-membership.repository.interface.ts
-│   ├── task.repository.interface.ts
-│   ├── document.repository.interface.ts
-│   ├── audit-log.repository.interface.ts
 │   └── index.ts
 │
-├── services/                                  # 領域服務介面
-│   ├── workspace-guard.service.interface.ts  # WorkspaceGuard
-│   ├── permission-checker.service.interface.ts # PermissionChecker
-│   ├── quota-enforcer.service.interface.ts   # QuotaEnforcer
+├── services/
+│   ├── permission-checker.service.interface.ts
+│   ├── quota-enforcer.service.interface.ts
 │   └── index.ts
 │
-└── index.ts                                   # Domain 層總匯出
-
+└── index.ts
 ```
 
 ## 關鍵設計原則
 
 ### 1. 值物件 (Value Objects)
-- **不可變性**: 所有值物件都是不可變的
-- **相等性**: 基於值相等,不是引用相等
-- **驗證**: 在建構時進行驗證
-- **無副作用**: 純函數,無副作用
+
+* **不可變性**: 所有值物件都是不可變的
+* **相等性**: 基於值相等,不是引用相等
+* **驗證**: 在建構時進行驗證
+* **無副作用**: 純函數,無副作用
+* **語意優先**: 不可退化為 primitive wrapper（例如只包一個 string 卻沒有規則）
+
+---
 
 ### 2. 實體 (Entities)
-- **身份識別**: 有唯一 ID
-- **生命週期**: 有明確的生命週期
-- **業務邏輯**: 封裝業務規則
-- **不可變性**: 盡可能保持不可變,變更透過方法
+
+* **身份識別**: 有唯一 ID（Value Object, 非 primitive）
+* **生命週期**: 有明確的生命週期
+* **業務邏輯**: 封裝業務規則,不只是資料容器
+* **狀態變更**: 狀態變更只能透過明確的方法發生
+* **不可變性**: 對外不可變,內部受控變更
+
+---
 
 ### 3. 聚合 (Aggregates)
-- **一致性邊界**: 確保一致性的邊界
-- **根實體**: 對外的唯一入口
-- **交易邊界**: 一個交易單位
-- **不變量**: 維護業務不變量
+
+* **一致性邊界**: 聚合是強一致性的邊界
+* **根實體**: 對外的唯一入口（Aggregate Root）
+* **交易邊界**: 一個 Command 只修改一個 Aggregate
+* **不變量**: 所有業務不變量只能在 Aggregate 內被維護
+* **禁止跨聚合引用實體**: 只能引用其他聚合的 ID
+
+---
 
 ### 4. 領域事件 (Domain Events)
-- **過去式命名**: 表示已發生的事實
-- **不可變**: 事件一旦產生就不可變
-- **元數據**: 包含完整的追蹤資訊
-- **WorkspaceScoped**: 包含 workspaceId
+
+* **過去式命名**: 表示已發生的事實
+* **不可變**: 事件一旦產生就不可變
+* **業務語意**: 事件描述的是業務事實,不是技術行為
+* **最小必要資料**: 只攜帶重建事實所需的資料
+* **Workspace 關聯**: 若事件發生於 Workspace 聚合內,才包含 workspaceId
+
+> 備註：Workspace 並非全域事件的必要欄位,避免強迫所有事件 WorkspaceScoped。
+
+---
 
 ### 5. 命令 (Commands)
-- **意圖表達**: 表達使用者意圖
-- **驗證**: 包含基本驗證
-- **上下文**: 包含 WorkspaceContext
-- **授權檢查**: 在執行前檢查權限
+
+* **意圖表達**: 明確表達使用者或系統的意圖
+* **不包含業務邏輯**: Command 是資料 + 意圖,不是行為
+* **驗證**: 僅包含結構與基本不變量驗證
+* **上下文**: 可包含 WorkspaceContext / IdentityContext
+* **授權檢查**: 授權發生在 Application Layer,不是 Domain 內
+
+---
 
 ### 6. 查詢 (Queries)
-- **讀取模型**: 專注於讀取
-- **投影**: 只返回需要的數據
-- **WorkspaceFiltered**: 自動過濾 Workspace
-- **分頁**: 支援分頁和排序
+
+* **讀取模型**: 不回傳 Domain Entity
+* **投影導向**: 只回傳 UI / Use Case 所需資料
+* **WorkspaceFiltered**: 查詢在 Application / Infrastructure 層套用 Workspace 過濾
+* **無副作用**: Query 不得觸發任何狀態改變
+* **可快取**: Query 結果應可安全快取
+
+---
 
 ## 檔案命名規範
 
-- **實體**: `{name}.entity.ts` (例: `workspace.entity.ts`)
-- **值物件**: `{name}.value-object.ts` (例: `workspace-id.value-object.ts`)
-- **聚合**: `{name}.aggregate.ts` (例: `workspace.aggregate.ts`)
-- **事件**: `{name}.event.ts` (例: `workspace-created.event.ts`)
-- **命令**: `{action}-{entity}.command.ts` (例: `create-workspace.command.ts`)
-- **查詢**: `{action}-{entity}.query.ts` (例: `get-workspace.query.ts`)
-- **列舉**: `{name}.enum.ts` (例: `workspace-type.enum.ts`)
-- **介面**: `{name}.interface.ts` (例: `workspace.repository.interface.ts`)
-- **錯誤**: `{name}.error.ts` (例: `domain.error.ts`)
+* **實體**: `{name}.entity.ts`
+  例: `workspace.entity.ts`
+* **值物件**: `{name}.value-object.ts`
+  例: `workspace-id.value-object.ts`
+* **聚合根**: `{name}.aggregate.ts`
+  例: `workspace.aggregate.ts`
+* **事件**: `{name}.event.ts`
+  例: `workspace-created.event.ts`
+* **命令**: `{action}-{entity}.command.ts`
+  例: `create-workspace.command.ts`
+* **查詢**: `{action}-{entity}.query.ts`
+  例: `get-workspace.query.ts`
+* **列舉**: `{name}.enum.ts`（僅限業務上封閉集合）
+  例: `workspace-status.enum.ts`
+* **介面**: `{name}.interface.ts`
+  例: `workspace.repository.interface.ts`
+* **錯誤**: `{name}.error.ts`
+  例: `domain.error.ts`
+
+> 補充規則：
+> **Identity / Owner / Role 類型禁止使用 enum，必須使用 union type 作為單一真理來源。**
+
+---
 
 ## TypeScript 類型安全
 
 所有領域物件都應該:
+
 1. 使用嚴格的 TypeScript 類型
-2. 避免 `any` 類型
-3. 使用 `readonly` 確保不可變性
-4. 使用 Type Guards 進行類型檢查
-5. 使用 Branded Types 增強類型安全
+2. 禁止 `any` 與隱性型別擴散
+3. 使用 `readonly` 保護對外狀態
+4. 使用 Type Guards 處理邊界型別
+5. 使用 Branded Types / Value Objects 防止 ID 混用
+6. 禁止在 Domain Layer 使用 framework-specific 型別
+
+---
 
 ## 與 NgRx Signals 整合
 
-- **領域模型 ≠ Store State**: 領域模型是純業務邏輯,Store State 是應用狀態
-- **轉換層**: 在 Store 與 Domain 之間需要轉換層
-- **領域事件 → Effects**: 領域事件可觸發 NgRx Effects
-- **Commands → Methods**: Store Methods 可以執行 Commands
-- **Queries → Computed**: Computed Signals 可以執行 Queries
+* **Domain ≠ Store State**
+  Domain Model 不等於 Store State
+* **Anti-Corruption Layer**
+  Store ↔ Domain 之間必須有轉換層
+* **Domain Events → Effects**
+  Effects 訂閱事件,不是 Entity
+* **Commands → Store Methods**
+  Store Methods 負責執行 Command
+* **Queries → Computed Signals**
+  Computed Signals 只依賴 Query 結果
+* **Domain 不知道 NgRx**
+  Domain Layer 不 import NgRx 任何東西
+
+---
 
 ## 依賴方向
 
 ```
 Presentation Layer (Components)
         ↓
-Application Layer (Stores, Effects)
+Application Layer (Stores, UseCases, Effects)
         ↓
-Domain Layer (Entities, Value Objects, Events, Commands)
+Domain Layer (Aggregates, Entities, Value Objects, Events)
         ↓
-Infrastructure Layer (Firebase, Repositories)
+Infrastructure Layer (Firebase, Repository Implementations)
 ```
 
-領域層不依賴任何外部層,保持純粹的業務邏輯。
+* Domain Layer **不依賴任何外部技術**
+* Infrastructure **實作介面,不反向污染 Domain**
+* Application **負責 orchestration,不是業務規則**
+
+---
+
+## 一句總結（這份文件的靈魂）
+
+* **Identity ≠ Membership**
+* **Aggregate 是邊界,不是資料夾**
+* **Command 改狀態,Query 不碰狀態**
+* **Domain 永遠不知道 Angular / NgRx / Firebase**
