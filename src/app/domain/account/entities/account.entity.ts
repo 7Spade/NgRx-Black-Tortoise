@@ -23,6 +23,19 @@
 export type AccountType = 'user' | 'organization' | 'bot' | 'team' | 'partner';
 
 /**
+ * Identity types - accounts that can authenticate
+ * User and Organization can own workspaces
+ * Bot is an identity but cannot own workspaces
+ */
+export type IdentityType = 'user' | 'organization' | 'bot';
+
+/**
+ * Membership types - relationship constructs that belong to organizations
+ * Cannot own workspaces, must have organizationId
+ */
+export type MembershipType = 'team' | 'partner';
+
+/**
  * Base Account interface
  * All account types extend this base structure
  */
@@ -185,6 +198,22 @@ export function isTeamAccount(account: Account): account is TeamAccount {
 
 export function isPartnerAccount(account: Account): account is PartnerAccount {
   return account.type === 'partner';
+}
+
+/**
+ * Type guard for identity types
+ * Identities can authenticate and have credentials
+ */
+export function isIdentityType(type: AccountType): type is IdentityType {
+  return type === 'user' || type === 'organization' || type === 'bot';
+}
+
+/**
+ * Type guard for membership types
+ * Memberships are relationship constructs belonging to organizations
+ */
+export function isMembershipType(type: AccountType): type is MembershipType {
+  return type === 'team' || type === 'partner';
 }
 
 /**

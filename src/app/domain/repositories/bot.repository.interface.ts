@@ -3,7 +3,7 @@
  * Pure TypeScript interface with NO framework dependencies
  */
 
-import { Bot } from '../entities/bot.entity';
+import { Bot } from '../bot/entities/bot.entity';
 
 /**
  * Bot Repository - Promise-based data access interface
