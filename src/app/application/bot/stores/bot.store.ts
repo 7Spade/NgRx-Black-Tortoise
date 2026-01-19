@@ -32,7 +32,7 @@ import { computed, inject } from '@angular/core';
 import { pipe, switchMap, tap, from } from 'rxjs';
 import { tapResponse } from '@ngrx/operators';
 import { initialBotState } from './bot.state';
-import { Bot, BotStatus } from '@domain/bot';
+import { Bot, BotStatus } from '@domain/account';
 import { BOT_REPOSITORY } from '@application/tokens';
 import { AuthStore } from '@application/auth/stores/auth.store';
 
@@ -75,7 +75,7 @@ export const BotStore = signalStore(
     const loadBotsByCreatorEffect = rxMethod<string>(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
-        switchMap((createdBy) => from(botRepository.getBotsByCreator(createdBy))),
+        switchMap((createdBy) => from(botRepository.findByCreatorId(createdBy))),
         tapResponse({
           next: (bots) => {
             patchState(store, {
@@ -97,7 +97,7 @@ export const BotStore = signalStore(
     const loadBotsByOrganizationEffect = rxMethod<string>(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
-        switchMap((organizationId) => from(botRepository.getBotsByOrganization(organizationId))),
+        switchMap((organizationId) => from(botRepository.getBotsByOwnerId(organizationId))),
         tapResponse({
           next: (bots) => {
             patchState(store, {
@@ -119,7 +119,7 @@ export const BotStore = signalStore(
     const loadBotsByWorkspaceEffect = rxMethod<string>(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
-        switchMap((workspaceId) => from(botRepository.getBotsByWorkspace(workspaceId))),
+        switchMap((workspaceId) => from(botRepository.getBotsByWorkspaceId(workspaceId))),
         tapResponse({
           next: (bots) => {
             patchState(store, {

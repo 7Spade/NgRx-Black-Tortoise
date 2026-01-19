@@ -112,6 +112,15 @@ export interface Organization {
 }
 
 /**
+ * Organization Identity
+ * Minimal organization representation for account switcher UI
+ * Extends Organization with type discriminator
+ */
+export interface OrganizationIdentity extends Organization {
+  readonly type: 'organization';
+}
+
+/**
  * Organization creation data
  * Used when creating a new organization
  */

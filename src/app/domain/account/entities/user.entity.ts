@@ -101,6 +101,15 @@ export interface User {
 }
 
 /**
+ * User Identity
+ * Minimal user representation for account switcher UI
+ * Extends User with type discriminator
+ */
+export interface UserIdentity extends User {
+  readonly type: 'user';
+}
+
+/**
  * User creation data
  * Used when creating a new user account
  */

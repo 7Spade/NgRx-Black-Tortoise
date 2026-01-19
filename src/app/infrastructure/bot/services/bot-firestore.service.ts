@@ -20,7 +20,7 @@ import {
   Timestamp,
 } from '@angular/fire/firestore';
 import { BotRepository } from '@domain/repositories';
-import { Bot, BotStatus } from '@domain/bot/entities/bot.entity';
+import { Bot, BotStatus } from '@domain/account/entities/bot.entity';
 
 @Injectable({ providedIn: 'root' })
 export class BotFirestoreService implements BotRepository {

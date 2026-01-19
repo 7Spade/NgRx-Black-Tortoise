@@ -3,7 +3,7 @@
  * Pure TypeScript interface with NO framework dependencies
  */
 
-import { Bot } from '../bot/entities/bot.entity';
+import { Bot } from '@domain/account';
 
 /**
  * Bot Repository - Promise-based data access interface
@@ -23,6 +23,11 @@ export interface BotRepository {
    * Get bots by owner ID (user or organization)
    */
   getBotsByOwnerId(ownerId: string): Promise<Bot[]>;
+
+  /**
+   * Get bots created by specific user (creator)
+   */
+  findByCreatorId(creatorId: string): Promise<Bot[]>;
 
   /**
    * Get bots with access to workspace

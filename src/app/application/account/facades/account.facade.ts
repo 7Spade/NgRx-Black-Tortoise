@@ -103,19 +103,38 @@ export class AccountFacade {
     const user = this.authStore.user();
     const currentAccount = this.accountStore.currentAccount();
 
+    // Helper to get email from account types that have it
+    const getAccountEmail = (account: Account | null): string | undefined => {
+      if (!account) return undefined;
+      if (account.type === 'user') return account.email;
+      if (account.type === 'organization') return account.contactEmail;
+      return undefined;
+    };
+
+    // Helper to get photo URL from account types that have it
+    const getAccountPhotoURL = (account: Account | null): string | null => {
+      if (!account) return null;
+      if (account.type === 'user') return account.photoURL || null;
+      if (account.type === 'organization') return account.logoURL || null;
+      if (account.type === 'bot') return account.avatarURL || null;
+      if (account.type === 'team') return account.iconURL || null;
+      if (account.type === 'partner') return account.logoURL || null;
+      return null;
+    };
+
     // Derive display name
     const displayName = currentAccount?.displayName 
-      || currentAccount?.email 
+      || getAccountEmail(currentAccount)
       || user?.email 
       || 'User';
 
     // Derive avatar URL
-    const avatarUrl = currentAccount?.photoURL || null;
+    const avatarUrl = getAccountPhotoURL(currentAccount);
 
     // Derive initials
     const initials = displayName
       .split(' ')
-      .map(n => n[0])
+      .map((n: string) => n[0])
       .join('')
       .toUpperCase()
       .slice(0, 2) || '??';

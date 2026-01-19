@@ -3,7 +3,7 @@
  * 
  * Initial state for bot management
  */
-import { Bot } from '@domain/bot';
+import { Bot } from '@domain/account';
 
 export interface BotState {
   /**
