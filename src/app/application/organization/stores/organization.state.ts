@@ -1,4 +1,4 @@
-import { Organization } from '@domain/organization';
+import { Organization } from '@domain/account';
 
 export interface OrganizationState {
   currentOrganization: Organization | null;

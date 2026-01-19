@@ -1,8 +1,52 @@
 /**
- * WorkspaceStore - Application Layer
+ * WorkspaceStore - PROJECTION-ONLY Reactive Store
  * 
- * Manages workspace state with NgRx Signals.
- * Includes recent and favorite workspace tracking.
+ * ╔═══════════════════════════════════════════════════════════════════╗
+ * ║  📖 READ-ONLY PROJECTION: Workspace Details from ContextStore      ║
+ * ╚═══════════════════════════════════════════════════════════════════╝
+ * 
+ * ARCHITECTURAL ROLE:
+ * ===================
+ * This store is a REACTIVE PROJECTION that:
+ * 1. Reacts to ContextStore.currentWorkspaceId() changes via effect
+ * 2. Loads full workspace details from repository
+ * 3. Provides computed signals for workspace data
+ * 4. NEVER mutates workspace selection state
+ * 
+ * CANONICAL REACTIVE FLOW:
+ * ========================
+ * 
+ * ContextStore.currentWorkspaceId signal changes →
+ *   WorkspaceStore.effect (line 197-207) detects change →
+ *     Calls loadWorkspace(newWorkspaceId) →
+ *       Updates currentWorkspace signal with full data →
+ *         ModuleStore.effect reacts to currentWorkspace →
+ *           Loads modules for new workspace
+ * 
+ * FORBIDDEN PATTERNS:
+ * ===================
+ * ❌ this.workspaceStore.setCurrentWorkspace() - NO SUCH METHOD
+ * ❌ this.workspaceStore.switchWorkspace() - NO SUCH METHOD
+ * ❌ Mutating currentWorkspaceId from this store
+ * ❌ Direct calls from UI to switch workspace
+ * 
+ * ALLOWED PATTERNS:
+ * =================
+ * ✅ Read currentWorkspace() signal for full workspace data
+ * ✅ Read workspaces() for available workspaces list
+ * ✅ Call loadWorkspaces() to refresh workspace list
+ * ✅ Call trackAccess(id) to update recent workspaces
+ * 
+ * TO SWITCH WORKSPACE:
+ * ====================
+ * Always use: contextStore.switchWorkspace(workspaceId)
+ * Never call: workspaceStore methods for switching
+ * 
+ * DEPENDENCY DIRECTION (DDD):
+ * ===========================
+ * ContextStore (owns currentWorkspaceId) →
+ *   WorkspaceStore (reacts and loads details) →
+ *     ModuleStore (reacts and loads modules)
  */
 import {
   patchState,
@@ -13,7 +57,7 @@ import {
   withHooks,
 } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { computed, inject } from '@angular/core';
+import { computed, inject, effect } from '@angular/core';
 import { pipe, switchMap, tap, catchError, of } from 'rxjs';
 import { tapResponse } from '@ngrx/operators';
 import { initialWorkspaceState } from './workspace.state';
@@ -21,6 +65,7 @@ import { Workspace } from '@domain/workspace';
 import { WORKSPACE_REPOSITORY } from '@application/tokens';
 import { OrganizationStore } from '@application/organization/stores/organization.store';
 import { AuthStore } from '@application/auth/stores/auth.store';
+import { ContextStore } from '@application/context/stores/context.store';
 
 export const WorkspaceStore = signalStore(
   { providedIn: 'root' },
@@ -75,6 +120,28 @@ export const WorkspaceStore = signalStore(
       )
     );
 
+    // Load single workspace details (projection from ContextStore.currentWorkspaceId)
+    const loadWorkspaceEffect = rxMethod<string>(
+      pipe(
+        tap(() => patchState(store, { loading: true, error: null })),
+        switchMap((workspaceId) => workspaceService.getWorkspace(workspaceId)),
+        tapResponse({
+          next: (workspace) => {
+            patchState(store, {
+              currentWorkspace: workspace,
+              loading: false,
+            });
+          },
+          error: (error: Error) => {
+            patchState(store, {
+              error: error.message || 'Failed to load workspace',
+              loading: false,
+            });
+          },
+        })
+      )
+    );
+
     // Create a new workspace
     const createWorkspaceEffect = rxMethod<Omit<Workspace, 'id'>>(
       pipe(
@@ -107,32 +174,14 @@ export const WorkspaceStore = signalStore(
       loadOrganizationWorkspaces(orgId: string): void {
         loadOrganizationWorkspacesEffect(orgId);
       },
+      loadWorkspace(workspaceId: string): void {
+        loadWorkspaceEffect(workspaceId);
+      },
       createWorkspace(workspace: Omit<Workspace, 'id'>): void {
         createWorkspaceEffect(workspace);
       },
 
       // Synchronous state updates
-      /**
-       * Set current workspace and propagate to dependent stores
-       * This ensures workspace switching triggers module availability updates
-       */
-      setCurrentWorkspace(workspace: Workspace | null) {
-        patchState(store, { currentWorkspace: workspace });
-        
-        // Track access when workspace is selected
-        if (workspace) {
-          this.trackAccess(workspace.id);
-          
-          // Propagate workspace switch to ModuleStore
-          // Import lazily to avoid circular dependencies
-          import('@application/module/stores/module.store').then(({ ModuleStore }) => {
-            const moduleStore = inject(ModuleStore);
-            
-            // Load modules for the selected workspace
-            moduleStore.loadWorkspaceModules(workspace.id);
-          });
-        }
-      },
       setWorkspaces(workspaces: Workspace[]) {
         patchState(store, { workspaces });
       },
@@ -175,6 +224,20 @@ export const WorkspaceStore = signalStore(
     onInit(store) {
       const orgStore = inject(OrganizationStore);
       const authStore = inject(AuthStore);
+      const contextStore = inject(ContextStore);
+
+      // Effect to react to workspace changes from ContextStore
+      effect(() => {
+        const workspaceId = contextStore.currentWorkspaceId();
+        
+        if (workspaceId) {
+          console.log('[WorkspaceStore] Loading workspace from context:', workspaceId);
+          store.loadWorkspace(workspaceId);
+        } else {
+          // Clear current workspace if no workspace is selected
+          patchState(store, { currentWorkspace: null });
+        }
+      });
 
       // Reactive method to sync workspaces with organization/auth changes
       const syncWorkspaces = rxMethod<void>(

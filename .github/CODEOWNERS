@@ -1,0 +1,14 @@
+# 根目錄所有檔案都由 Copilot 主導
+* @copilot
+
+# 特定資料夾或檔案由 Copilot 管理
+/docs/ @copilot
+/src/ @copilot
+/scripts/ @copilot
+
+# CI/CD 設定檔由 Copilot 管理
+.github/workflows/ @copilot
+
+# 特定重要檔案，例如 README 或 LICENSE
+README.md @copilot
+LICENSE @copilot
