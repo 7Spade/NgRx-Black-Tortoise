@@ -3,6 +3,7 @@
  */
 export * from './account.repository.interface';
 export * from './auth.repository.interface';
+export * from './bot.repository.interface';
 export * from './document.repository.interface';
 export * from './member.repository.interface';
 export * from './module.repository.interface';

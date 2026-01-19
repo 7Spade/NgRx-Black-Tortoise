@@ -5,6 +5,7 @@ import { InjectionToken } from '@angular/core';
 import {
   AccountRepository,
   AuthRepository,
+  BotRepository,
   DocumentRepository,
   MemberRepository,
   ModuleRepository,
@@ -18,6 +19,7 @@ import {
 
 export const ACCOUNT_REPOSITORY = new InjectionToken<AccountRepository>('ACCOUNT_REPOSITORY');
 export const AUTH_REPOSITORY = new InjectionToken<AuthRepository>('AUTH_REPOSITORY');
+export const BOT_REPOSITORY = new InjectionToken<BotRepository>('BOT_REPOSITORY');
 export const DOCUMENT_REPOSITORY = new InjectionToken<DocumentRepository>('DOCUMENT_REPOSITORY');
 export const MEMBER_REPOSITORY = new InjectionToken<MemberRepository>('MEMBER_REPOSITORY');
 export const MODULE_REPOSITORY = new InjectionToken<ModuleRepository>('MODULE_REPOSITORY');
