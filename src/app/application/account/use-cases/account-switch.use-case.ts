@@ -65,8 +65,15 @@ export class AccountSwitchUseCase {
     // Execute account switch mutation
     this.accountStore.setCurrentAccount(targetAccount);
 
+    // Helper to get email from account types that have it
+    const getAccountEmail = (account: Account): string | undefined => {
+      if (account.type === 'user') return account.email;
+      if (account.type === 'organization') return account.contactEmail;
+      return undefined;
+    };
+
     // Derive display labels
-    const accountName = targetAccount.displayName || targetAccount.email || targetAccount.id;
+    const accountName = targetAccount.displayName || getAccountEmail(targetAccount) || targetAccount.id;
     const accountTypeLabel = this.getAccountTypeLabel(targetAccount.type);
 
     // UX Feedback: Visual notification

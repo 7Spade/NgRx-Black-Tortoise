@@ -74,39 +74,117 @@ export class WorkspaceCreationUseCase {
       };
     }
 
-    // Business Rule: Organization context required
-    const organization = this.organizationStore.currentOrganization();
-    if (!organization) {
-      this.showFeedback('Organization context required', 'error');
-      return {
-        success: false,
-        message: 'Organization context required',
-        workspaceId: null,
-      };
-    }
+    // Get current context to determine workspace ownership
+    const currentContext = this.contextStore.current();
 
     try {
-      // Build workspace data object (Application layer responsibility)
-      const workspaceData: Omit<Workspace, 'id'> = {
-        organizationId: organization.id,
-        name: request.name,
-        displayName: request.displayName,
-        description: request.description || '',
-        ownerId: user.id,
-        modules: {
-          overview: true,
-          documents: true,
-          tasks: true,
-          members: true,
-          permissions: true,
-          audit: false,
-          settings: true,
-          journal: false,
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        status: 'active' as const,
-      };
+      // Build workspace data based on context type
+      let workspaceData: Omit<Workspace, 'id'>;
+
+      if (currentContext?.type === 'organization') {
+        // Organization-owned workspace
+        workspaceData = {
+          ownerType: 'organization',
+          ownerId: currentContext.organizationId,
+          organizationId: currentContext.organizationId,
+          name: request.name,
+          displayName: request.displayName,
+          description: request.description || '',
+          modules: {
+            overview: true,
+            documents: true,
+            tasks: true,
+            members: true,
+            permissions: true,
+            audit: false,
+            settings: true,
+            journal: false,
+          },
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          status: 'active' as const,
+        };
+      } else if (currentContext?.type === 'user' || !currentContext) {
+        // User-owned personal workspace
+        workspaceData = {
+          ownerType: 'user',
+          ownerId: user.id,
+          name: request.name,
+          displayName: request.displayName,
+          description: request.description || '',
+          modules: {
+            overview: true,
+            documents: true,
+            tasks: true,
+            members: true,
+            permissions: true,
+            audit: false,
+            settings: true,
+            journal: false,
+          },
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          status: 'active' as const,
+        };
+      } else if (currentContext?.type === 'team' || currentContext?.type === 'partner') {
+        /**
+         * 🚨 CANONICAL MODEL ENFORCEMENT - RUNTIME VALIDATION 🚨
+         * 
+         * WHY THIS REJECTION EXISTS:
+         * ==========================
+         * Team and Partner are MEMBERSHIP CONSTRUCTS, not identities.
+         * 
+         * IDENTITY (can own workspaces):
+         * - User → Personal account, can create personal workspaces
+         * - Organization → Organizational account, can create org workspaces
+         * - Bot → Service account (future implementation)
+         * 
+         * MEMBERSHIP (can ACCESS but NOT OWN workspaces):
+         * - Team → Internal unit of Organization
+         *   - Team has members (users)
+         *   - Team has permissions (references workspaceId)
+         *   - Team does NOT own workspaces
+         * 
+         * - Partner → External unit of Organization
+         *   - Partner has members (users)
+         *   - Partner has access grants (references workspaceId)
+         *   - Partner does NOT own workspaces
+         * 
+         * ENFORCEMENT STRATEGY:
+         * =====================
+         * 1. COMPILE-TIME: WorkspaceOwnership type restricts ownerType to 'user' | 'organization'
+         * 2. RUNTIME: This validation catches UI bugs where create button appears in team/partner context
+         * 
+         * ❌ ANTI-PATTERN: Allowing workspace creation and silently changing context to organization
+         * ✅ CORRECT PATTERN: Explicit error message guiding user to switch to user/org context first
+         * 
+         * PREVENTS:
+         * =========
+         * - Confusing UI states where "Create Workspace" appears in invalid contexts
+         * - Silent failures during workspace persistence
+         * - Data inconsistency where workspace.ownerType doesn't match context
+         * - Billing/quota enforcement bugs (who pays for team-owned workspace?)
+         */
+        // REJECT: Team and Partner cannot own workspaces
+        this.showFeedback(
+          'Workspaces can only be created in User or Organization context. ' +
+          'Teams and Partners are membership constructs and cannot own workspaces.',
+          'error'
+        );
+        return {
+          success: false,
+          message: 'Team and Partner contexts cannot create workspaces',
+          workspaceId: null,
+        };
+      } else {
+        // Unknown context type
+        this.showFeedback('Invalid context for workspace creation', 'error');
+        return {
+          success: false,
+          message: 'Invalid context',
+          workspaceId: null,
+        };
+      }
 
       // State Update: Create workspace via WorkspaceStore
       this.workspaceStore.createWorkspace(workspaceData);
@@ -115,8 +193,14 @@ export class WorkspaceCreationUseCase {
       // Note: We need to wait for creation to complete to get workspace ID
       // For now, we'll rely on WorkspaceStore's createWorkspace to handle this
       
-      // UX Feedback: Success notification
-      this.showFeedback(`Workspace "${request.displayName}" created successfully`, 'success');
+      // UX Feedback: Success notification with ownership context
+      const ownershipContext = workspaceData.ownerType === 'user' 
+        ? 'personal workspace' 
+        : 'organization workspace';
+      this.showFeedback(
+        `${ownershipContext} "${request.displayName}" created successfully`, 
+        'success'
+      );
 
       return {
         success: true,

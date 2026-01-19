@@ -26,10 +26,10 @@ import { getVertexAI, provideVertexAI } from '@angular/fire/vertexai';
 import { routes } from '@presentation/app.routes';
 import { environment } from '../environments/environment';
 import {
-  ACCOUNT_REPOSITORY,
+  USER_REPOSITORY,
+  BOT_REPOSITORY,
   AUTH_REPOSITORY,
   DOCUMENT_REPOSITORY,
-  MEMBER_REPOSITORY,
   MODULE_REPOSITORY,
   NOTIFICATION_REPOSITORY,
   ORGANIZATION_REPOSITORY,
@@ -38,10 +38,10 @@ import {
   TEAM_REPOSITORY,
   WORKSPACE_REPOSITORY,
 } from '@application/tokens';
-import { AccountFirestoreService } from '@infrastructure/account/services/account.service';
+import { UserFirestoreService } from '@infrastructure/user/services/user.service';
+import { BotFirestoreService } from '@infrastructure/bot';
 import { AuthService } from '@infrastructure/auth/services/auth.service';
 import { DocumentFirestoreService } from '@infrastructure/document';
-import { MemberFirestoreService } from '@infrastructure/member';
 import { ModuleFirestoreService } from '@infrastructure/module';
 import { NotificationFirestoreService } from '@infrastructure/notification';
 import { OrganizationService } from '@infrastructure/organization/services/organization.service';
@@ -134,10 +134,10 @@ export const appConfig: ApplicationConfig = {
     provideVertexAI(() => getVertexAI()),
 
     // Domain repositories (composition root wiring)
-    { provide: ACCOUNT_REPOSITORY, useClass: AccountFirestoreService },
+    { provide: USER_REPOSITORY, useClass: UserFirestoreService },
+    { provide: BOT_REPOSITORY, useClass: BotFirestoreService },
     { provide: AUTH_REPOSITORY, useClass: AuthService },
     { provide: DOCUMENT_REPOSITORY, useClass: DocumentFirestoreService },
-    { provide: MEMBER_REPOSITORY, useClass: MemberFirestoreService },
     { provide: MODULE_REPOSITORY, useClass: ModuleFirestoreService },
     { provide: NOTIFICATION_REPOSITORY, useClass: NotificationFirestoreService },
     { provide: ORGANIZATION_REPOSITORY, useClass: OrganizationService },
