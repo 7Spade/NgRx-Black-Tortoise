@@ -350,25 +350,24 @@ export interface PartnerMembership {
 export type Membership = TeamMembership | PartnerMembership;
 
 // ============================================================================
-// ACCOUNT TYPE - UI compatibility layer
+// ACCOUNT UNION - For UI display only
 // ============================================================================
 
 /**
- * Account Type
+ * ARCHITECTURAL PRINCIPLE:
+ * ========================
+ * There is NO unified "AccountType" that mixes Identity and Membership layers.
  * 
- * Combined type for UI account switching and display purposes.
- * This is a union of IdentityType and MembershipType.
+ * Instead, use:
+ * - IdentityType for authentication-capable accounts ('user' | 'organization' | 'bot')
+ * - MembershipType for relationship constructs ('team' | 'partner')
+ * - WorkspaceOwnerType for workspace ownership ('user' | 'organization')
  * 
- * USE THIS FOR:
- * - Account switcher UI (showing all 5 account types)
- * - Display logic that needs to handle all account types
+ * For UI components that need to handle both layers, use the inline union:
+ *   type: IdentityType | MembershipType
  * 
- * DO NOT USE THIS FOR:
- * - Workspace ownership (use WorkspaceOwnerType instead)
- * - Authentication logic (use IdentityType instead)
+ * This makes the architectural distinction explicit and prevents confusion.
  */
-export type AccountType = IdentityType | MembershipType;
-// Expands to: 'user' | 'organization' | 'bot' | 'team' | 'partner'
 
 /**
  * Account Union
@@ -504,7 +503,7 @@ export interface Workspace extends WorkspaceOwnership {
  * Returns true for: 'user', 'organization', 'bot'
  * Returns false for: 'team', 'partner'
  */
-export function isIdentityType(type: AccountType): type is IdentityType {
+export function isIdentityType(type: IdentityType | MembershipType): type is IdentityType {
   return type === 'user' || type === 'organization' || type === 'bot';
 }
 
@@ -515,7 +514,7 @@ export function isIdentityType(type: AccountType): type is IdentityType {
  * Returns true for: 'team', 'partner'
  * Returns false for: 'user', 'organization', 'bot'
  */
-export function isMembershipType(type: AccountType): type is MembershipType {
+export function isMembershipType(type: IdentityType | MembershipType): type is MembershipType {
   return type === 'team' || type === 'partner';
 }
 
@@ -526,7 +525,7 @@ export function isMembershipType(type: AccountType): type is MembershipType {
  * Returns true for: 'user', 'organization'
  * Returns false for: 'bot', 'team', 'partner'
  */
-export function canOwnWorkspace(type: AccountType): type is WorkspaceOwnerType {
+export function canOwnWorkspace(type: IdentityType | MembershipType): type is WorkspaceOwnerType {
   return type === 'user' || type === 'organization';
 }
 
@@ -615,7 +614,7 @@ export const ValidationHelpers = {
    * Ensures only User or Organization accounts can create workspaces.
    * Throws error if Bot, Team, or Partner attempts workspace creation.
    */
-  validateWorkspaceCreation(accountType: AccountType): void {
+  validateWorkspaceCreation(accountType: IdentityType | MembershipType): void {
     if (!canOwnWorkspace(accountType)) {
       throw new Error(
         `Workspace creation denied: Only 'user' and 'organization' accounts can create workspaces. ` +
@@ -757,7 +756,7 @@ export function createOrgWorkspaceExample(orgId: string, createdBy: string): Wor
 /**
  * Example: Runtime validation for workspace creation
  */
-export function validateWorkspaceCreationExample(accountType: AccountType): boolean {
+export function validateWorkspaceCreationExample(accountType: IdentityType | MembershipType): boolean {
   try {
     ValidationHelpers.validateWorkspaceCreation(accountType);
     return true;
@@ -815,8 +814,10 @@ export function demonstrateTypeGuards(account: Account): void {
  * TYPES:
  * - IdentityType: 'user' | 'organization' | 'bot'
  * - MembershipType: 'team' | 'partner'
- * - AccountType: IdentityType | MembershipType
  * - WorkspaceOwnerType: 'user' | 'organization'
+ * 
+ * IMPORTANT: There is NO "AccountType" - use IdentityType | MembershipType inline
+ * when you need to handle both layers in UI code.
  * 
  * INTERFACES:
  * - UserIdentity
