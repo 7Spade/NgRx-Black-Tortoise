@@ -13,9 +13,19 @@ export interface PartnerRepository {
   getPartner(id: string): Promise<Partner | null>;
   
   /**
+   * Alias for getPartner (standard DDD naming)
+   */
+  findById(id: string): Promise<Partner | null>;
+  
+  /**
    * Get all partners for an organization
    */
   getOrganizationPartners(organizationId: string): Promise<Partner[]>;
+  
+  /**
+   * Get all partners a user is a member of
+   */
+  findByMemberId(userId: string): Promise<Partner[]>;
   
   /**
    * List partners with optional filters

@@ -11,9 +11,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { AccountFacade } from '@application/account/facades/account.facade';
 import { BREAKPOINTS } from '@shared/constants/breakpoints.constant';
-import { Account } from '@domain/account';
-
-type AccountType = 'user' | 'organization' | 'bot' | 'team' | 'partner';
+import { Account, IdentityType, MembershipType } from '@domain/account';
 
 /**
  * Account Switcher Component
@@ -130,12 +128,14 @@ export class AccountSwitcherComponent implements OnInit {
   /**
    * Get icon for account type
    */
-  getAccountTypeIcon(type: AccountType): string {
+  getAccountTypeIcon(type: IdentityType | MembershipType): string {
     switch (type) {
       case 'user':
         return 'person';
       case 'organization':
         return 'business';
+      case 'bot':
+        return 'smart_toy';
       case 'team':
         return 'groups';
       case 'partner':
@@ -148,7 +148,7 @@ export class AccountSwitcherComponent implements OnInit {
   /**
    * Get badge color for account type
    */
-  getBadgeColor(type: AccountType): string {
+  getBadgeColor(type: IdentityType | MembershipType): string {
     switch (type) {
       case 'organization':
         return 'primary';
