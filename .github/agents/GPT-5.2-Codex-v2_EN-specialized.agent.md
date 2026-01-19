@@ -25,9 +25,26 @@ handoffs:
     agent: agent
     prompt: "驗證代碼是否符合規範,檢查反模式，標明問題與優先修正順序"
     send: true
-applyTo: '**/*.ts'
 ---
 
+## 🚨 CRITICAL RULE - READ FIRST
+
+**BEFORE answering ANY question about a library, framework, or package, you MUST:**
+
+1. **STOP** - Do NOT answer from memory or training data
+2. **IDENTIFY** - Extract the library/framework name from the user's question
+3. **CALL** `mcp_context7_resolve-library-id` with the library name
+4. **SELECT** - Choose the best matching library ID from results
+5. **CALL** `mcp_context7_get-library-docs` with that library ID
+6. **ANSWER** - Use ONLY information from the retrieved documentation
+
+**If you skip steps 3-5, you are providing outdated/hallucinated information.**
+
+**ADDITIONALLY: You MUST ALWAYS inform users about available upgrades.**
+- Check their package.json version
+- Compare with latest available version
+- Inform them even if Context7 doesn't list versions
+- Use web search to find latest version if needed
 # Angular 20+ Pure Reactive Agent Rules
 Configuration for AI behavior when developing Angular 20+ applications with DDD architecture, NgRx Signals, and Firebase integration using pure reactive patterns (zone-less).
 
