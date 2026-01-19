@@ -1,19 +1,6 @@
 // Workspace Switcher Component Styles
 // Following Material Design 3 Guidelines
 
-// Screen Reader Only Utility
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
-}
-
 // Trigger Button
 .workspace-trigger {
   display: flex;
@@ -42,7 +29,7 @@
     flex-shrink: 0;
   }
   
-  // Workspace Name
+  // Workspace Name (always rendered, visibility via [hidden])
   .workspace-name {
     font-size: 14px;
     font-weight: 500;
@@ -51,9 +38,14 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    
+    // Ensure smooth transition when hidden
+    &[hidden] {
+      display: none;
+    }
   }
   
-  // Dropdown Icon
+  // Dropdown Icon (always rendered, visibility via [hidden])
   .dropdown-icon {
     width: 20px;
     height: 20px;
@@ -63,10 +55,18 @@
     &.rotated {
       transform: rotate(180deg);
     }
+    
+    &[hidden] {
+      display: none;
+    }
   }
   
-  // Loading Spinner
+  // Loading Spinner (always rendered, visibility via [hidden])
   .loading-spinner {
+    &[hidden] {
+      display: none;
+    }
+    
     ::ng-deep .mat-mdc-progress-spinner circle {
       stroke: rgba(0, 0, 0, 0.6);
     }

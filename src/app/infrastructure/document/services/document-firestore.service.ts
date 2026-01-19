@@ -12,10 +12,10 @@ import {
   updateDoc,
   deleteDoc,
   serverTimestamp,
-  Timestamp
+  Timestamp,
+  getDocs
 } from '@angular/fire/firestore';
-import { Observable, from } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { firstValueFrom } from 'rxjs';
 
 // Domain
 import { Document, DocumentType } from '@domain/document';
@@ -23,7 +23,7 @@ import { DocumentRepository } from '@domain/repositories/document.repository.int
 
 /**
  * Firestore implementation of DocumentRepository
- * Manages workspace documents persistence
+ * Promise-based implementation for framework-agnostic domain layer
  */
 @Injectable({
   providedIn: 'root'
@@ -35,7 +35,7 @@ export class DocumentFirestoreService implements DocumentRepository {
   /**
    * Get all documents for a workspace
    */
-  getWorkspaceDocuments(workspaceId: string): Observable<Document[]> {
+  async getWorkspaceDocuments(workspaceId: string): Promise<Document[]> {
     const q = query(
       this.documentsCollection,
       where('workspaceId', '==', workspaceId),
@@ -43,15 +43,14 @@ export class DocumentFirestoreService implements DocumentRepository {
       orderBy('updatedAt', 'desc')
     );
     
-    return collectionData(q, { idField: 'id' }).pipe(
-      map(docs => docs.map(doc => this.mapToDocument(doc)))
-    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => this.mapToDocument({ ...doc.data(), id: doc.id }));
   }
 
   /**
    * Get documents by type
    */
-  getDocumentsByType(workspaceId: string, type: DocumentType): Observable<Document[]> {
+  async getDocumentsByType(workspaceId: string, type: DocumentType): Promise<Document[]> {
     const q = query(
       this.documentsCollection,
       where('workspaceId', '==', workspaceId),
@@ -60,15 +59,14 @@ export class DocumentFirestoreService implements DocumentRepository {
       orderBy('updatedAt', 'desc')
     );
     
-    return collectionData(q, { idField: 'id' }).pipe(
-      map(docs => docs.map(doc => this.mapToDocument(doc)))
-    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => this.mapToDocument({ ...doc.data(), id: doc.id }));
   }
 
   /**
    * Get documents by parent (folder)
    */
-  getFolderDocuments(workspaceId: string, parentId: string | null): Observable<Document[]> {
+  async getFolderDocuments(workspaceId: string, parentId: string | null): Promise<Document[]> {
     const q = query(
       this.documentsCollection,
       where('workspaceId', '==', workspaceId),
@@ -77,25 +75,23 @@ export class DocumentFirestoreService implements DocumentRepository {
       orderBy('updatedAt', 'desc')
     );
     
-    return collectionData(q, { idField: 'id' }).pipe(
-      map(docs => docs.map(doc => this.mapToDocument(doc)))
-    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => this.mapToDocument({ ...doc.data(), id: doc.id }));
   }
 
   /**
    * Get a single document
    */
-  getDocument(id: string): Observable<Document | null> {
+  async getDocument(id: string): Promise<Document | null> {
     const documentDoc = doc(this.firestore, `documents/${id}`);
-    return docData(documentDoc, { idField: 'id' }).pipe(
-      map(data => data ? this.mapToDocument(data) : null)
-    );
+    const data = await firstValueFrom(docData(documentDoc, { idField: 'id' }));
+    return data ? this.mapToDocument(data) : null;
   }
 
   /**
    * Get recent documents
    */
-  getRecentDocuments(workspaceId: string, userId: string, limit: number = 10): Observable<Document[]> {
+  async getRecentDocuments(workspaceId: string, userId: string, limit: number = 10): Promise<Document[]> {
     const q = query(
       this.documentsCollection,
       where('workspaceId', '==', workspaceId),
@@ -103,15 +99,14 @@ export class DocumentFirestoreService implements DocumentRepository {
       orderBy('updatedAt', 'desc')
     );
     
-    return collectionData(q, { idField: 'id' }).pipe(
-      map(docs => docs.slice(0, limit).map(doc => this.mapToDocument(doc)))
-    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.slice(0, limit).map(doc => this.mapToDocument({ ...doc.data(), id: doc.id }));
   }
 
   /**
    * Get starred documents
    */
-  getStarredDocuments(workspaceId: string, userId: string): Observable<Document[]> {
+  async getStarredDocuments(workspaceId: string, userId: string): Promise<Document[]> {
     const q = query(
       this.documentsCollection,
       where('workspaceId', '==', workspaceId),
@@ -120,96 +115,93 @@ export class DocumentFirestoreService implements DocumentRepository {
       orderBy('updatedAt', 'desc')
     );
     
-    return collectionData(q, { idField: 'id' }).pipe(
-      map(docs => docs.map(doc => this.mapToDocument(doc)))
-    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => this.mapToDocument({ ...doc.data(), id: doc.id }));
   }
 
   /**
    * Get a single document by ID
    */
-  getDocumentById(documentId: string): Observable<Document | null> {
+  async getDocumentById(documentId: string): Promise<Document | null> {
     const documentDoc = doc(this.firestore, `documents/${documentId}`);
-    return docData(documentDoc, { idField: 'id' }).pipe(
-      map(doc => doc ? this.mapToDocument(doc) : null)
-    );
+    const data = await firstValueFrom(docData(documentDoc, { idField: 'id' }));
+    return data ? this.mapToDocument(data) : null;
   }
 
   /**
    * Create a new document
    */
-  createDocument(documentData: Omit<Document, 'id'>): Observable<string> {
+  async createDocument(documentData: Omit<Document, 'id'>): Promise<string> {
     const data = {
       ...documentData,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
 
-    return from(addDoc(this.documentsCollection, data)).pipe(
-      map(docRef => docRef.id)
-    );
+    const docRef = await addDoc(this.documentsCollection, data);
+    return docRef.id;
   }
 
   /**
    * Update a document
    */
-  updateDocument(documentId: string, data: Partial<Document>): Observable<void> {
+  async updateDocument(documentId: string, data: Partial<Document>): Promise<void> {
     const documentDoc = doc(this.firestore, `documents/${documentId}`);
     const updateData = {
       ...data,
       updatedAt: serverTimestamp()
     };
     
-    return from(updateDoc(documentDoc, updateData));
+    await updateDoc(documentDoc, updateData);
   }
 
   /**
    * Delete a document (soft delete)
    */
-  deleteDocument(documentId: string, deletedBy: string): Observable<void> {
+  async deleteDocument(documentId: string, deletedBy: string): Promise<void> {
     const documentDoc = doc(this.firestore, `documents/${documentId}`);
-    return from(updateDoc(documentDoc, { 
+    await updateDoc(documentDoc, { 
       deletedAt: serverTimestamp(),
       deletedBy
-    }));
+    });
   }
 
   /**
    * Permanently delete a document
    */
-  permanentlyDeleteDocument(documentId: string): Observable<void> {
+  async permanentlyDeleteDocument(documentId: string): Promise<void> {
     const documentDoc = doc(this.firestore, `documents/${documentId}`);
-    return from(deleteDoc(documentDoc));
+    await deleteDoc(documentDoc);
   }
 
   /**
    * Move a document to a new parent
    */
-  moveDocument(documentId: string, newParentId: string | null, updatedBy: string): Observable<void> {
+  async moveDocument(documentId: string, newParentId: string | null, updatedBy: string): Promise<void> {
     const documentDoc = doc(this.firestore, `documents/${documentId}`);
-    return from(updateDoc(documentDoc, {
+    await updateDoc(documentDoc, {
       parentId: newParentId,
       updatedBy,
       updatedAt: serverTimestamp()
-    }));
+    });
   }
 
   /**
    * Share document with users
    */
-  shareDocument(documentId: string, userIds: string[], updatedBy: string): Observable<void> {
+  async shareDocument(documentId: string, userIds: string[], updatedBy: string): Promise<void> {
     const documentDoc = doc(this.firestore, `documents/${documentId}`);
-    return from(updateDoc(documentDoc, {
+    await updateDoc(documentDoc, {
       sharedWith: userIds,
       updatedBy,
       updatedAt: serverTimestamp()
-    }));
+    });
   }
 
   /**
    * Search documents
    */
-  searchDocuments(workspaceId: string, searchQuery: string): Observable<Document[]> {
+  async searchDocuments(workspaceId: string, searchQuery: string): Promise<Document[]> {
     const q = query(
       this.documentsCollection,
       where('workspaceId', '==', workspaceId),
@@ -217,18 +209,17 @@ export class DocumentFirestoreService implements DocumentRepository {
       orderBy('name')
     );
     
-    return collectionData(q, { idField: 'id' }).pipe(
-      map(docs => docs
-        .filter(doc => doc['name']?.toLowerCase().includes(searchQuery.toLowerCase()))
-        .map(doc => this.mapToDocument(doc))
-      )
-    );
+    const snapshot = await getDocs(q);
+    const allDocs = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }) as any);
+    return allDocs
+      .filter((doc: any) => doc.name?.toLowerCase().includes(searchQuery.toLowerCase()))
+      .map((doc: any) => this.mapToDocument(doc));
   }
 
   /**
    * Get deleted documents
    */
-  getDeletedDocuments(workspaceId: string): Observable<Document[]> {
+  async getDeletedDocuments(workspaceId: string): Promise<Document[]> {
     const q = query(
       this.documentsCollection,
       where('workspaceId', '==', workspaceId),
@@ -236,50 +227,47 @@ export class DocumentFirestoreService implements DocumentRepository {
       orderBy('deletedAt', 'desc')
     );
     
-    return collectionData(q, { idField: 'id' }).pipe(
-      map(docs => docs.map(doc => this.mapToDocument(doc)))
-    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => this.mapToDocument({ ...doc.data(), id: doc.id }));
   }
 
   /**
    * Restore a deleted document
    */
-  restoreDocument(documentId: string): Observable<void> {
+  async restoreDocument(documentId: string): Promise<void> {
     const documentDoc = doc(this.firestore, `documents/${documentId}`);
-    return from(updateDoc(documentDoc, {
+    await updateDoc(documentDoc, {
       deletedAt: null,
       deletedBy: null
-    }));
+    });
   }
 
   /**
    * Get document statistics
    */
-  getDocumentStats(workspaceId: string): Observable<any> {
-    // This is a placeholder - in a real implementation, you'd aggregate data
-    return this.getWorkspaceDocuments(workspaceId).pipe(
-      map(docs => ({
-        totalFiles: docs.filter(d => d.type === DocumentType.FILE).length,
-        totalFolders: docs.filter(d => d.type === DocumentType.FOLDER).length,
-        totalSize: docs.reduce((sum, d) => sum + (d.size || 0), 0),
-        filesByType: docs.reduce((acc, d) => {
-          if (d.type === DocumentType.FILE && d.mimeType) {
-            acc[d.mimeType] = (acc[d.mimeType] || 0) + 1;
-          }
-          return acc;
-        }, {} as Record<string, number>),
-        recentDocuments: docs.slice(0, 5)
-      }))
-    );
+  async getDocumentStats(workspaceId: string): Promise<any> {
+    const docs = await this.getWorkspaceDocuments(workspaceId);
+    return {
+      totalFiles: docs.filter(d => d.type === DocumentType.FILE).length,
+      totalFolders: docs.filter(d => d.type === DocumentType.FOLDER).length,
+      totalSize: docs.reduce((sum, d) => sum + (d.size || 0), 0),
+      filesByType: docs.reduce((acc, d) => {
+        if (d.type === DocumentType.FILE && d.mimeType) {
+          acc[d.mimeType] = (acc[d.mimeType] || 0) + 1;
+        }
+        return acc;
+      }, {} as Record<string, number>),
+      recentDocuments: docs.slice(0, 5)
+    };
   }
 
   /**
    * Toggle document star (not in interface but needed for DocumentStore)
    */
-  toggleDocumentStar(documentId: string, userId: string, starred: boolean): Observable<void> {
+  async toggleDocumentStar(documentId: string, userId: string, starred: boolean): Promise<void> {
     // This would require updating the document's starredBy array
-    // For now, returning empty observable
-    return from(Promise.resolve());
+    // For now, returning empty promise
+    return Promise.resolve();
   }
 
   /**

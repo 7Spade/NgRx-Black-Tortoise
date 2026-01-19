@@ -2,14 +2,14 @@
   // Dev Container 顯示名稱
   "name": "NgRx-Dragon",
 
-  // 基底映像：Node.js 22（官方 DevContainers）
-  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  // 基底映像：Node.js 24（官方 DevContainers）
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:24",
 
   // 啟用 DevContainer features（額外能力）
   "features": {
     // Node feature：確保 Node / pnpm 版本一致
     "ghcr.io/devcontainers/features/node:2": {
-      "version": "22",          // 指定 Node.js 版本
+      "version": "24",          // 指定 Node.js 版本
       "installPnpm": false       // 自動安裝 pnpm
     }
   },

@@ -1,52 +1,72 @@
-# project-layer-mapping.yml
-# 描述：將現有專案結構映射到 MCP 層級 (Domain / Application / Infrastructure / Interface)
-
-description: "專案層級映射: Angular 20+ Pure Reactive × NgRx Signals × Firebase"
+description: "專案層級映射: Angular 20 + NgRx Signals + Firebase"
 version: "1.0.0"
 
 # Domain 層: 純 TS 模型與規則
 domain:
-  - path: "src/app/core/workspace/models"
-  - path: "src/app/core/global-shell/models"
-  - path: "src/app/core/account/models"
-  - path: "src/app/core/context/models"
-  - path: "src/app/core/event-bus/models"
-  - path: "src/app/core/modules/models"
+  - path: "src/app/domain/account"
+  - path: "src/app/domain/context"
+  - path: "src/app/domain/document"
+  - path: "src/app/domain/member"
+  - path: "src/app/domain/module"
+  - path: "src/app/domain/notification"
+  - path: "src/app/domain/organization"
+  - path: "src/app/domain/partner"
+  - path: "src/app/domain/repositories"
+  - path: "src/app/domain/shared"
+  - path: "src/app/domain/tasks"
+  - path: "src/app/domain/team"
+  - path: "src/app/domain/workspace"
 
 # Application 層: signalStore + rxMethod
 application:
-  - path: "src/app/core/workspace/stores"
-  - path: "src/app/core/global-shell/stores"
-  - path: "src/app/core/account/stores"
-  - path: "src/app/core/context/stores"
-  - path: "src/app/core/event-bus/stores"
-  - path: "src/app/core/modules/stores"
+  - path: "src/app/application/account"
+  - path: "src/app/application/auth"
+  - path: "src/app/application/context"
+  - path: "src/app/application/document"
+  - path: "src/app/application/member"
+  - path: "src/app/application/module"
+  - path: "src/app/application/notification"
+  - path: "src/app/application/organization"
+  - path: "src/app/application/partner"
+  - path: "src/app/application/quiz"
+  - path: "src/app/application/services"
+  - path: "src/app/application/tasks"
+  - path: "src/app/application/team"
+  - path: "src/app/application/tokens"
+  - path: "src/app/application/ui"
+  - path: "src/app/application/workspace"
+  - path: "src/app/application/index.ts"
 
 # Infrastructure 層: 封裝 Firebase / API
 infrastructure:
-  - path: "src/app/core/workspace/services"
-  - path: "src/app/core/global-shell/services"
-  - path: "src/app/core/account/services"
-  - path: "src/app/core/context/services"
-  - path: "src/app/core/event-bus/services"
-  - path: "src/app/core/modules/services"
+  - path: "src/app/infrastructure/account"
+  - path: "src/app/infrastructure/auth"
+  - path: "src/app/infrastructure/document"
+  - path: "src/app/infrastructure/member"
+  - path: "src/app/infrastructure/module"
+  - path: "src/app/infrastructure/notification"
+  - path: "src/app/infrastructure/organization"
+  - path: "src/app/infrastructure/partner"
+  - path: "src/app/infrastructure/tasks"
+  - path: "src/app/infrastructure/team"
+  - path: "src/app/infrastructure/workspace"
 
-# Interface 層: 組件 / page / guard
+# Interface / Presentation 層: 組件 / page / guard
 interface:
-  - path: "src/app/features/workspace"
-  - path: "src/app/features/modules"
-  - path: "src/app/features/account"
-  - path: "src/app/features/dashboard"
-  - path: "src/app/features/shared/components"
-  - path: "src/app/features/shared/pages"
-  - path: "src/app/features/shared/guards"
+  - path: "src/app/presentation/features"
+  - path: "src/app/presentation/shared"
+  - path: "src/app/presentation/app.component.ts"
+  - path: "src/app/presentation/app.routes.ts"
 
-# EventBus: 全局解耦跨 store
-eventbus:
-  - path: "src/app/core/event-bus/stores/event-bus.store.ts"
+# Shared / 公共
+shared:
+  - path: "src/app/shared/constants"
+  - path: "src/app/shared/models"
+  - path: "src/app/shared/services"
 
-# 備註: 所有 Domain 模型僅用於 Application 層，不可被 Interface / Service 直接 import
+# 備註
 notes:
+  - "所有 Domain 模型僅用於 Application 層，不可被 Interface / Service 直接 import"
   - "所有 store 都使用 signalStore + rxMethod"
   - "所有 template 使用 @if/@for/@switch"
   - "禁止 @ngrx/store / effects / entity"
