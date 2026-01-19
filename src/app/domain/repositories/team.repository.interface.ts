@@ -13,9 +13,19 @@ export interface TeamRepository {
   getTeam(id: string): Promise<Team | null>;
   
   /**
+   * Alias for getTeam (standard DDD naming)
+   */
+  findById(id: string): Promise<Team | null>;
+  
+  /**
    * Get all teams for an organization
    */
   getOrganizationTeams(organizationId: string): Promise<Team[]>;
+  
+  /**
+   * Get all teams a user is a member of
+   */
+  findByMemberId(userId: string): Promise<Team[]>;
   
   /**
    * List teams with optional filters

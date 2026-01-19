@@ -10,7 +10,7 @@ import { AuthStore } from '@application/auth/stores/auth.store';
 import { WorkspaceSwitcherComponent } from '../switchers/workspace-switcher/workspace-switcher.component';
 import { GlobalSearchComponent } from './global-search/global-search.component';
 import { NotificationBellComponent } from './notification-bell/notification-bell.component';
-import { AccountMenuComponent } from './account-menu/account-menu.component';
+import { AccountSwitcherComponent } from '../switchers/account-switcher/account-switcher.component';
 
 @Component({
   selector: 'app-header',
@@ -25,7 +25,7 @@ import { AccountMenuComponent } from './account-menu/account-menu.component';
     WorkspaceSwitcherComponent,
     GlobalSearchComponent,
     NotificationBellComponent,
-    AccountMenuComponent
+    AccountSwitcherComponent
   ],
   template: `
     <mat-toolbar class="header">
@@ -55,7 +55,7 @@ import { AccountMenuComponent } from './account-menu/account-menu.component';
           >
             <mat-icon>settings</mat-icon>
           </button>
-          <app-account-menu />
+          <app-account-switcher />
         </div>
       </div>
     </mat-toolbar>

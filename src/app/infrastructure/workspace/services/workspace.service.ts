@@ -42,10 +42,35 @@ export class WorkspaceService implements WorkspaceRepository {
 
   /**
    * Get all workspaces for an organization
+   * Returns organization-owned workspaces only
    */
   async getOrganizationWorkspaces(organizationId: string): Promise<Workspace[]> {
     const collectionRef = collection(this.firestore, this.collectionName);
-    const q = query(collectionRef, where('organizationId', '==', organizationId));
+    // Query for org-owned workspaces (ownerType === 'organization')
+    const q = query(
+      collectionRef, 
+      where('ownerType', '==', 'organization'),
+      where('organizationId', '==', organizationId)
+    );
+    
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(
+      (doc) => ({ id: doc.id, ...doc.data() } as Workspace)
+    );
+  }
+
+  /**
+   * Get all workspaces owned by a specific user
+   * Returns user-owned personal workspaces
+   */
+  async getUserWorkspaces(userId: string): Promise<Workspace[]> {
+    const collectionRef = collection(this.firestore, this.collectionName);
+    // Query for user-owned workspaces (ownerType === 'user')
+    const q = query(
+      collectionRef,
+      where('ownerType', '==', 'user'),
+      where('ownerId', '==', userId)
+    );
     
     const snapshot = await getDocs(q);
     return snapshot.docs.map(

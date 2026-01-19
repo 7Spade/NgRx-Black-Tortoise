@@ -1,7 +1,20 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ContextStore } from '@application/context/stores/context.store';
+import { ContextFacade } from '@application/context/facades/context.facade';
 
+/**
+ * Workspace Overview Component
+ * 
+ * ╔═══════════════════════════════════════════════════════════════════╗
+ * ║  PRESENTATION LAYER: Workspace Dashboard                         ║
+ * ╚═══════════════════════════════════════════════════════════════════╝
+ * 
+ * ARCHITECTURAL COMPLIANCE:
+ * =========================
+ * ✅ Uses ContextFacade.viewModel() for context display (no direct store access)
+ * ✅ Pure passive renderer with zero business logic
+ * ✅ Single ViewModel pattern for template bindings
+ */
 @Component({
   selector: 'app-overview',
   standalone: true,
@@ -12,8 +25,8 @@ import { ContextStore } from '@application/context/stores/context.store';
       
       <div class="context-info">
         <h2>Current Context</h2>
-        <p><strong>Type:</strong> {{ contextStore.currentContextType() }}</p>
-        <p><strong>Name:</strong> {{ contextStore.currentContextName() }}</p>
+        <p><strong>Type:</strong> {{ contextFacade.viewModel().currentContextType }}</p>
+        <p><strong>Name:</strong> {{ contextFacade.viewModel().currentContextName }}</p>
       </div>
 
       <div class="stats-grid">
@@ -181,5 +194,13 @@ import { ContextStore } from '@application/context/stores/context.store';
   `]
 })
 export class OverviewComponent {
-  contextStore = inject(ContextStore);
+  /**
+   * Facade injection - ONLY dependency
+   * 
+   * ARCHITECTURAL ENFORCEMENT:
+   * ==========================
+   * Component binds ONLY to contextFacade.viewModel()
+   * No direct store imports, no business logic
+   */
+  contextFacade = inject(ContextFacade);
 }
