@@ -9,6 +9,12 @@
  * NO Angular, RxJS, or Firebase dependencies allowed.
  * Framework-agnostic, fully typed TypeScript only.
  * 
+ * 🎯 RULE OF THUMB:
+ * =================
+ * If it can authenticate → Identity.
+ * If it only groups users → Membership.
+ * Team/Partner NEVER authenticate.
+ * 
  * ARCHITECTURAL RULES:
  * ====================
  * 1. Identity Layer: 'user', 'organization', 'bot' - CAN authenticate, have credentials
@@ -17,10 +23,18 @@
  * 4. No member lists in Workspace - membership managed externally via Organization/Team/Partner
  * 5. Discriminated unions enforce compile-time type safety
  * 6. Type guards provide runtime validation
+ * 
+ * ⚠️ CRITICAL EXCLUSIONS:
+ * =======================
+ * ❌ Team/Partner are NOT Identity types
+ * ❌ Team/Partner MUST NOT appear in Identity/Account/Auth layers
+ * ❌ Team/Partner MUST NOT be part of IdentityType unions
+ * ✅ Team/Partner are membership groupings ONLY
+ * ✅ They exist ONLY in the Membership layer
  */
 
 // ============================================================================
-// IDENTITY LAYER - Authentication-capable accounts
+// IDENTITY LAYER (Account / Auth boundary)
 // ============================================================================
 
 /**
@@ -29,11 +43,44 @@
  * Identities are accounts that can authenticate and have credentials.
  * They represent the top-level account hierarchy.
  * 
+ * ✅ INCLUDED:
  * - 'user': Personal user account (CAN own workspaces)
  * - 'organization': Organizational account (CAN own workspaces)
  * - 'bot': Service account (CANNOT own workspaces, but is an identity)
+ * 
+ * ⚠️ EXPLICIT EXCLUSION:
+ * - NO 'team' (team is a membership, NOT an identity)
+ * - NO 'partner' (partner is a membership, NOT an identity)
+ * 
+ * Team and Partner CANNOT authenticate, have NO credentials, and belong to the Membership layer.
  */
 export type IdentityType = 'user' | 'organization' | 'bot';
+
+// ============================================================================
+// PHYSICAL TYPE ISOLATION - Preventing Incorrect Unions
+// ============================================================================
+
+/**
+ * Type Source for Identity (Auth-bound)
+ * 
+ * This section provides the CORRECT type source for Identity-related types.
+ * Copilot should reference these when generating Identity layer code.
+ * 
+ * ✅ CORRECT IDENTITY INTERFACE EXAMPLE:
+ */
+export interface IdentityAccount {
+  readonly id: string;
+  readonly type: IdentityType; // ONLY 'user' | 'organization' | 'bot'
+  // Common fields shared by all identities
+  readonly email: string;
+  readonly displayName: string;
+}
+
+/**
+ * As long as IdentityType does NOT contain 'team' or 'partner',
+ * Copilot cannot generate incorrect unions.
+ * The full Identity union is defined after the individual interfaces below.
+ */
 
 /**
  * User Identity
@@ -204,19 +251,54 @@ export interface BotIdentity {
 export type Identity = UserIdentity | OrganizationIdentity | BotIdentity;
 
 // ============================================================================
-// MEMBERSHIP LAYER - Relationship constructs
+// MEMBERSHIP LAYER (Relationship only, NON-identity)
 // ============================================================================
 
 /**
  * Membership Type
  * 
- * Memberships are relationship constructs that belong to organizations.
+ * ⚠️ CRITICAL: Memberships are NON-identity relationship constructs.
+ * 
+ * Memberships belong to organizations and represent groupings of users.
  * They CANNOT authenticate independently and CANNOT own workspaces.
  * 
- * - 'team': Internal organizational unit with members
- * - 'partner': External collaborator with members
+ * ✅ INCLUDED:
+ * - 'team': Internal organizational unit with members (NON-identity)
+ * - 'partner': External collaborator with members (NON-identity)
+ * 
+ * ⚠️ EXPLICIT CLARIFICATION:
+ * - Team is NOT an identity type
+ * - Partner is NOT an identity type
+ * - Neither can authenticate
+ * - Neither can own workspaces
+ * - Both are relationship constructs only
  */
 export type MembershipType = 'team' | 'partner';
+
+// ============================================================================
+// PHYSICAL TYPE ISOLATION - Membership (Relationship-bound, NOT identity)
+// ============================================================================
+
+/**
+ * Type Source for Membership (NON-identity)
+ * 
+ * This section provides the CORRECT type source for Membership-related types.
+ * Copilot should reference these when generating Membership layer code.
+ * 
+ * ✅ CORRECT MEMBERSHIP INTERFACE EXAMPLE:
+ */
+export interface MembershipEntity {
+  readonly id: string;
+  readonly type: MembershipType; // ONLY 'team' | 'partner'
+  readonly organizationId: string; // Memberships ALWAYS belong to an organization
+  readonly memberIds: string[]; // Memberships group users
+}
+
+/**
+ * As long as MembershipType does NOT appear in IdentityType unions,
+ * Copilot cannot generate code that treats Team/Partner as Identity.
+ * The full Membership union is defined after the individual interfaces below.
+ */
 
 /**
  * Team Membership
@@ -376,6 +458,65 @@ export type Membership = TeamMembership | PartnerMembership;
  * Used for UI components that display all account types.
  */
 export type Account = Identity | Membership;
+
+// ============================================================================
+// 🚫 FORBIDDEN PATTERNS (DO NOT GENERATE)
+// ============================================================================
+
+/**
+ * ❌ PROHIBITED: Do NOT create unions that mix Identity and Membership in type literals
+ * 
+ * These patterns violate the architectural boundary between Identity and Membership layers.
+ * Copilot MUST NOT generate code using these patterns.
+ * 
+ * FORBIDDEN EXAMPLES:
+ * 
+ * ```typescript
+ * // ❌ WRONG: Team/Partner included in IdentityType
+ * type IdentityType = 'user' | 'organization' | 'bot' | 'team' | 'partner';
+ * 
+ * // ❌ WRONG: AccountType mixing layers
+ * type AccountType = 'user' | 'organization' | 'bot' | 'team' | 'partner';
+ * 
+ * // ❌ WRONG: OwnerType including membership types
+ * type OwnerType = 'user' | 'organization' | 'team' | 'partner';
+ * ```
+ * 
+ * CORRECT PATTERNS:
+ * 
+ * ```typescript
+ * // ✅ CORRECT: Identity types only
+ * type IdentityType = 'user' | 'organization' | 'bot';
+ * 
+ * // ✅ CORRECT: Workspace owner types (subset of Identity)
+ * type WorkspaceOwnerType = 'user' | 'organization';
+ * 
+ * // ✅ CORRECT: Membership types separate
+ * type MembershipType = 'team' | 'partner';
+ * 
+ * // ✅ CORRECT: When both layers needed, use inline union explicitly
+ * type AccountDisplayType = IdentityType | MembershipType;
+ * ```
+ */
+
+/**
+ * 🚫 Team / Partner MUST NEVER:
+ * 
+ * ❌ Be used as ownerType in Workspace
+ * ❌ Appear in authentication claims
+ * ❌ Be stored in Workspace.owner* fields
+ * ❌ Have workspace ownership capabilities
+ * ❌ Have authentication credentials
+ * ❌ Be treated as Identity types
+ * 
+ * ✅ Team / Partner SHOULD ONLY:
+ * 
+ * ✅ Exist in the Membership layer
+ * ✅ Belong to an Organization (via organizationId)
+ * ✅ Have workspace ACCESS (via workspaceAccessIds)
+ * ✅ Group users for permissions
+ * ✅ Be used for collaboration contexts
+ */
 
 // ============================================================================
 // WORKSPACE OWNERSHIP - Type-safe ownership model
