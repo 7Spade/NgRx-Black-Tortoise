@@ -1,0 +1,106 @@
+<div class="search-dialog">
+  <!-- Header -->
+  <div class="search-header">
+    <mat-icon class="search-icon">search</mat-icon>
+    
+    <input
+      #searchInput
+      type="text"
+      class="search-input"
+      placeholder="Search workspaces, modules, documents..."
+      [value]="searchQuery()"
+      (input)="onSearchChange(searchInput.value)"
+      (keydown)="handleKeydown($event)"
+      autofocus
+      aria-label="Global search" />
+    
+    <button
+      mat-icon-button
+      class="close-button"
+      (click)="closeDialog()"
+      aria-label="Close search">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <mat-divider />
+
+  <!-- Results -->
+  <div class="search-results">
+    @if (hasResults()) {
+      <!-- Workspace Results -->
+      @if (workspaceResults().length > 0) {
+        <div class="result-section">
+          <div class="section-label">Workspaces</div>
+          
+          @for (workspace of workspaceResults(); track workspace.id; let i = $index) {
+            <button
+              mat-list-item
+              class="result-item"
+              [class.selected]="selectedIndex() === i"
+              (click)="navigateToResult('workspace', workspace)">
+              <mat-icon class="result-icon">{{ getIcon('workspace') }}</mat-icon>
+              <div class="result-content">
+                <div class="result-title">{{ workspace.name }}</div>
+                @if (workspace.description) {
+                  <div class="result-description">{{ workspace.description }}</div>
+                }
+              </div>
+            </button>
+          }
+        </div>
+      }
+
+      <!-- Module Results -->
+      @if (moduleResults().length > 0) {
+        <div class="result-section">
+          <div class="section-label">Modules</div>
+          
+          @for (module of moduleResults(); track module.id; let i = $index) {
+            <button
+              mat-list-item
+              class="result-item"
+              [class.selected]="selectedIndex() === (workspaceResults().length + i)"
+              (click)="navigateToResult('module', module)">
+              <mat-icon class="result-icon">{{ getIcon('module') }}</mat-icon>
+              <div class="result-content">
+                <div class="result-title">{{ module.name }}</div>
+                @if (module.description) {
+                  <div class="result-description">{{ module.description }}</div>
+                }
+              </div>
+            </button>
+          }
+        </div>
+      }
+    } @else if (showEmpty()) {
+      <!-- Empty State -->
+      <div class="empty-state">
+        <mat-icon class="empty-icon">search_off</mat-icon>
+        <div class="empty-title">No results found</div>
+        <div class="empty-description">
+          Try different keywords or check your spelling
+        </div>
+      </div>
+    } @else {
+      <!-- Initial State -->
+      <div class="initial-state">
+        <mat-icon class="initial-icon">search</mat-icon>
+        <div class="initial-title">Search across your workspace</div>
+        <div class="initial-description">
+          Find workspaces, modules, documents, and more
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Footer with keyboard shortcuts -->
+  <mat-divider />
+  <div class="search-footer">
+    <div class="shortcut-hint">
+      <kbd>↑↓</kbd> Navigate
+      <kbd>Enter</kbd> Select
+      <kbd>Esc</kbd> Close
+    </div>
+  </div>
+</div>

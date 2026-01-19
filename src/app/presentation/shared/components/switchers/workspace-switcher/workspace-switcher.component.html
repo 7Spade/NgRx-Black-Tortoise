@@ -1,0 +1,203 @@
+<!--
+╔══════════════════════════════════════════════════════════════════════╗
+║  STABLE DOM ARCHITECTURE: Pre-rendered elements, CSS visibility     ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+VIOLATIONS FIXED:
+─────────────────
+❌ BEFORE: Multiple direct signal reads (currentWorkspace(), isLoading())
+✅ AFTER: Single viewModel() binding
+
+❌ BEFORE: Structural @if causing DOM rebuild on responsive changes
+✅ AFTER: Pre-rendered elements with [hidden] attribute
+
+❌ BEFORE: Nested structural directives causing multi-level DOM thrashing
+✅ AFTER: Flat DOM structure with CSS visibility control
+-->
+
+<!-- Workspace Switcher Trigger Button -->
+<button
+  mat-button
+  class="workspace-trigger"
+  [matMenuTriggerFor]="workspaceMenu"
+  (menuOpened)="onMenuOpened()"
+  (menuClosed)="onMenuClosed()"
+  role="button"
+  aria-label="Switch workspace"
+  aria-haspopup="true"
+  [attr.aria-expanded]="isMenuOpen()"
+  [attr.aria-controls]="isMenuOpen() ? 'workspace-menu' : null">
+  
+  <!-- Workspace Icon (always rendered, stable DOM) -->
+  <mat-icon class="workspace-icon">
+    {{ viewModel().currentWorkspaceIcon }}
+  </mat-icon>
+  
+  <!-- Workspace Name (always rendered, visibility controlled via [hidden]) -->
+  <span 
+    class="workspace-name"
+    [hidden]="isMobile() || isTablet()">
+    {{ viewModel().currentWorkspaceName }}
+  </span>
+  
+  <!-- Dropdown Icon (always rendered, visibility controlled) -->
+  <mat-icon
+    class="dropdown-icon"
+    [class.rotated]="isMenuOpen()"
+    [hidden]="isMobile() || viewModel().isLoading">
+    expand_more
+  </mat-icon>
+  
+  <!-- Loading Spinner (always rendered, visibility controlled) -->
+  <mat-spinner 
+    diameter="16" 
+    class="loading-spinner"
+    [hidden]="!viewModel().isLoading">
+  </mat-spinner>
+</button>
+
+<!--
+╔══════════════════════════════════════════════════════════════════════╗
+║  MAT-MENU STABLE DOM: No structural changes during overlay open     ║
+╚══════════════════════════════════════════════════════════════════════╝
+-->
+
+<!-- Workspace Dropdown Menu -->
+<mat-menu
+  #workspaceMenu="matMenu"
+  id="workspace-menu"
+  class="workspace-menu"
+  role="menu"
+  xPosition="before"
+  yPosition="below">
+  
+  <!-- Search Bar (always rendered, stable DOM) -->
+  <div class="search-container" (click)="$event.stopPropagation()">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-icon matPrefix>search</mat-icon>
+      <input
+        matInput
+        placeholder="Search workspaces..."
+        [value]="viewModel().searchQuery"
+        (input)="onSearchInput($any($event.target).value)"
+        autocomplete="off">
+      
+      <!-- Clear button (always rendered, visibility controlled) -->
+      <button
+        matSuffix
+        mat-icon-button
+        aria-label="Clear search"
+        [hidden]="!viewModel().searchQuery"
+        (click)="onSearchInput('')">
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-form-field>
+  </div>
+  
+  <mat-divider></mat-divider>
+  
+  <!-- Recent Workspaces Section (always rendered, visibility controlled) -->
+  <div 
+    class="menu-section"
+    [hidden]="viewModel().recentWorkspaces.length === 0 || viewModel().searchQuery">
+    <div class="section-title">Recent</div>
+    
+    @for (workspace of viewModel().recentWorkspaces; track workspace.id) {
+      <button
+        mat-menu-item
+        class="workspace-item"
+        role="menuitem"
+        [class.active]="isWorkspaceActive(workspace.id)"
+        [attr.aria-current]="isWorkspaceActive(workspace.id) ? 'true' : null"
+        (click)="selectWorkspace(workspace)">
+        
+        <div class="workspace-item-content">
+          <!-- Icon (always rendered) -->
+          <mat-icon class="item-icon">{{ getWorkspaceIcon(workspace) }}</mat-icon>
+          
+          <!-- Info (always rendered) -->
+          <div class="item-info">
+            <div class="item-name">{{ workspace.displayName || workspace.name }}</div>
+            <div 
+              class="item-meta"
+              [hidden]="!workspace.description">
+              {{ workspace.description }}
+            </div>
+          </div>
+          
+          <!-- Check Icon (always rendered, visibility controlled via CSS) -->
+          <mat-icon 
+            class="check-icon"
+            [style.visibility]="isWorkspaceActive(workspace.id) ? 'visible' : 'hidden'">
+            check
+          </mat-icon>
+        </div>
+      </button>
+    }
+  </div>
+  
+  <!-- Divider (always rendered, visibility controlled) -->
+  <mat-divider 
+    [hidden]="viewModel().recentWorkspaces.length === 0 || viewModel().searchQuery">
+  </mat-divider>
+  
+  <!-- My Workspaces Section (always rendered) -->
+  <div class="menu-section">
+    <div class="section-title">{{ viewModel().searchQuery ? 'Search Results' : 'My Workspaces' }}</div>
+    
+    <!-- Workspaces List (always iterate, even if hidden) -->
+    <div [hidden]="viewModel().myWorkspaces.length === 0">
+      @for (workspace of viewModel().myWorkspaces; track workspace.id) {
+        <button
+          mat-menu-item
+          class="workspace-item"
+          role="menuitem"
+          [class.active]="isWorkspaceActive(workspace.id)"
+          [attr.aria-current]="isWorkspaceActive(workspace.id) ? 'true' : null"
+          (click)="selectWorkspace(workspace)">
+          
+          <div class="workspace-item-content">
+            <!-- Icon (always rendered) -->
+            <mat-icon class="item-icon">{{ getWorkspaceIcon(workspace) }}</mat-icon>
+            
+            <!-- Info (always rendered) -->
+            <div class="item-info">
+              <div class="item-name">{{ workspace.displayName || workspace.name }}</div>
+              <div 
+                class="item-meta"
+                [hidden]="!workspace.description">
+                {{ workspace.description }}
+              </div>
+            </div>
+            
+            <!-- Check Icon (always rendered, visibility controlled via CSS) -->
+            <mat-icon 
+              class="check-icon"
+              [style.visibility]="isWorkspaceActive(workspace.id) ? 'visible' : 'hidden'">
+              check
+            </mat-icon>
+          </div>
+        </button>
+      }
+    </div>
+    
+    <!-- Empty State (always rendered, visibility controlled) -->
+    <div 
+      class="empty-state"
+      [hidden]="viewModel().myWorkspaces.length > 0">
+      {{ viewModel().searchQuery ? 'No workspaces found' : 'No workspaces available' }}
+    </div>
+  </div>
+  
+  <mat-divider></mat-divider>
+  
+  <!-- Create Workspace Option (always rendered) -->
+  <button
+    mat-menu-item
+    class="create-workspace"
+    role="menuitem"
+    (click)="createWorkspace()">
+    <mat-icon>add</mat-icon>
+    <span>Create new workspace</span>
+  </button>
+</mat-menu>

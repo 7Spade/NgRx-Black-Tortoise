@@ -1,0 +1,280 @@
+<!-- Account Switcher Trigger Button -->
+<button
+  mat-button
+  class="account-trigger"
+  [matMenuTriggerFor]="accountMenu"
+  (menuOpened)="onMenuOpened()"
+  (menuClosed)="onMenuClosed()"
+  role="button"
+  aria-label="Switch account"
+  aria-haspopup="true"
+  [attr.aria-expanded]="isMenuOpen()"
+  [attr.aria-controls]="isMenuOpen() ? 'account-menu' : null">
+  
+  <!-- Avatar Container -->
+  <div class="avatar-container">
+    @if (facade.viewModel().currentAccount?.photoURL; as avatar) {
+      <img
+        [src]="avatar"
+        [alt]="facade.viewModel().currentAccount?.displayName || 'Account'"
+        class="avatar"
+        loading="lazy">
+    } @else {
+      <mat-icon class="avatar-icon">
+        {{ getAccountTypeIcon(facade.viewModel().currentAccount?.type || 'user') }}
+      </mat-icon>
+    }
+    
+    <!-- Account Type Badge -->
+    @if (facade.viewModel().currentAccount?.type !== 'user') {
+      <span
+        class="badge"
+        [attr.data-type]="facade.viewModel().currentAccount?.type">
+      </span>
+    }
+  </div>
+  
+  <!-- Account Name (hidden on mobile/tablet) -->
+  @if (!isMobile() && !isTablet()) {
+    <span class="account-name">
+      {{ facade.viewModel().currentAccount?.displayName || facade.viewModel().currentAccount?.email || 'Account' }}
+    </span>
+  }
+  
+  <!-- Dropdown Icon (hidden on mobile) -->
+  @if (!isMobile()) {
+    <mat-icon
+      class="dropdown-icon"
+      [class.rotated]="isMenuOpen()"
+      [class.loading]="facade.viewModel().isLoading">
+      expand_more
+    </mat-icon>
+  }
+  @if (facade.viewModel().isLoading) {
+    <mat-spinner diameter="16" class="loading-spinner"></mat-spinner>
+  }
+</button>
+
+<!-- Screen Reader Announcement Area -->
+<div
+  aria-live="polite"
+  aria-atomic="true"
+  class="sr-only">
+  {{ announceMessage() }}
+</div>
+
+<!-- Account Dropdown Menu -->
+<mat-menu
+  #accountMenu="matMenu"
+  id="account-menu"
+  class="account-menu"
+  role="menu"
+  xPosition="before"
+  yPosition="below">
+  
+  <!-- Personal Account Section -->
+  <div class="menu-section">
+    <div class="section-title">Personal Account</div>
+    
+    <!-- ✅ STABLE DOM RULE: Use [hidden] instead of @if to prevent DOM rebuild -->
+    <button
+      mat-menu-item
+      class="account-item"
+      role="menuitem"
+      [hidden]="!facade.viewModel().personalAccount"
+      [class.active]="facade.viewModel().personalAccount?.id === facade.viewModel().currentAccountId"
+      [attr.aria-current]="facade.viewModel().personalAccount?.id === facade.viewModel().currentAccountId ? 'true' : null"
+      (click)="facade.viewModel().personalAccount ? switchAccount(facade.viewModel().personalAccount!) : null">
+      
+      <div class="account-item-content">
+        <!-- Left: Avatar -->
+        <div class="item-avatar">
+          @if (facade.viewModel().personalAccount?.photoURL; as avatar) {
+            <img [src]="avatar" [alt]="facade.viewModel().personalAccount?.displayName || facade.viewModel().personalAccount?.email || 'User'">
+          } @else {
+            <mat-icon>person</mat-icon>
+          }
+        </div>
+        
+        <!-- Center: Info -->
+        <div class="item-info">
+          <div class="item-name">{{ facade.viewModel().personalAccount?.displayName || facade.viewModel().personalAccount?.email }}</div>
+          <div class="item-meta">User</div>
+        </div>
+        
+        <!-- Right: Check Icon (CSS visibility toggle) -->
+        <mat-icon 
+          class="check-icon"
+          [style.visibility]="facade.viewModel().personalAccount?.id === facade.viewModel().currentAccountId ? 'visible' : 'hidden'">
+          check
+        </mat-icon>
+      </div>
+    </button>
+    
+    <div class="empty-state" [hidden]="facade.viewModel().personalAccount">
+      No personal account
+    </div>
+  </div>
+  
+  <mat-divider></mat-divider>
+  
+  <!-- Organizations Section -->
+  <div class="menu-section">
+    <div class="section-title">Organizations</div>
+    
+    <!-- ✅ STABLE DOM RULE: Pre-render all items, toggle visibility -->
+    <div [hidden]="facade.viewModel().organizationAccounts.length === 0">
+      @for (org of facade.viewModel().organizationAccounts; track org.id) {
+        <button
+          mat-menu-item
+          class="account-item"
+          role="menuitem"
+          [class.active]="org.id === facade.viewModel().currentAccountId"
+          [attr.aria-current]="org.id === facade.viewModel().currentAccountId ? 'true' : null"
+          (click)="switchAccount(org)">
+          
+          <div class="account-item-content">
+            <div class="item-avatar">
+              @if (org.photoURL; as avatar) {
+                <img [src]="avatar" [alt]="org.displayName || org.email || 'Organization'">
+              } @else {
+                <mat-icon>business</mat-icon>
+              }
+            </div>
+            
+            <div class="item-info">
+              <div class="item-name">{{ org.displayName || org.email }}</div>
+              <div class="item-meta">Organization</div>
+            </div>
+            
+            <mat-icon 
+              class="check-icon"
+              [style.visibility]="org.id === facade.viewModel().currentAccountId ? 'visible' : 'hidden'">
+              check
+            </mat-icon>
+          </div>
+        </button>
+      }
+    </div>
+    
+    <div class="empty-state" [hidden]="facade.viewModel().organizationAccounts.length > 0">
+      No organizations yet
+    </div>
+  </div>
+  
+  <mat-divider></mat-divider>
+  
+  <!-- Teams Section -->
+  <div class="menu-section">
+    <div class="section-title">Teams</div>
+    
+    <!-- ✅ STABLE DOM RULE: Pre-render all items, toggle visibility -->
+    <div [hidden]="facade.viewModel().teamAccounts.length === 0">
+      @for (team of facade.viewModel().teamAccounts; track team.id) {
+        <button
+          mat-menu-item
+          class="account-item"
+          role="menuitem"
+          [class.active]="team.id === facade.viewModel().currentAccountId"
+          [attr.aria-current]="team.id === facade.viewModel().currentAccountId ? 'true' : null"
+          (click)="switchAccount(team)">
+          
+          <div class="account-item-content">
+            <div class="item-avatar">
+              @if (team.photoURL; as avatar) {
+                <img [src]="avatar" [alt]="team.displayName || team.email || 'Team'">
+              } @else {
+                <mat-icon>groups</mat-icon>
+              }
+            </div>
+            
+            <div class="item-info">
+              <div class="item-name">{{ team.displayName || team.email }}</div>
+              <div class="item-meta">Team</div>
+            </div>
+            
+            <mat-icon 
+              class="check-icon"
+              [style.visibility]="team.id === facade.viewModel().currentAccountId ? 'visible' : 'hidden'">
+              check
+            </mat-icon>
+          </div>
+        </button>
+      }
+    </div>
+    
+    <div class="empty-state" [hidden]="facade.viewModel().teamAccounts.length > 0">
+      No teams yet
+    </div>
+  </div>
+  
+  <mat-divider></mat-divider>
+  
+  <!-- Partners Section -->
+  <div class="menu-section">
+    <div class="section-title">Partners</div>
+    
+    <!-- ✅ STABLE DOM RULE: Pre-render all items, toggle visibility -->
+    <div [hidden]="facade.viewModel().partnerAccounts.length === 0">
+      @for (partner of facade.viewModel().partnerAccounts; track partner.id) {
+        <button
+          mat-menu-item
+          class="account-item"
+          role="menuitem"
+          [class.active]="partner.id === facade.viewModel().currentAccountId"
+          [attr.aria-current]="partner.id === facade.viewModel().currentAccountId ? 'true' : null"
+          (click)="switchAccount(partner)">
+          
+          <div class="account-item-content">
+            <div class="item-avatar">
+              @if (partner.photoURL; as avatar) {
+                <img [src]="avatar" [alt]="partner.displayName || partner.email || 'Partner'">
+              } @else {
+                <mat-icon>handshake</mat-icon>
+              }
+            </div>
+            
+            <div class="item-info">
+              <div class="item-name">{{ partner.displayName || partner.email }}</div>
+              <div class="item-meta">Partner</div>
+            </div>
+            
+            <mat-icon 
+              class="check-icon"
+              [style.visibility]="partner.id === facade.viewModel().currentAccountId ? 'visible' : 'hidden'">
+              check
+            </mat-icon>
+          </div>
+        </button>
+      }
+    </div>
+    
+    <div class="empty-state" [hidden]="facade.viewModel().partnerAccounts.length > 0">
+      No partner relationships yet
+    </div>
+  </div>
+  
+  <mat-divider></mat-divider>
+  
+  <!-- User Actions Section -->
+  <div class="menu-section">
+    <button mat-menu-item (click)="goToProfile()">
+      <mat-icon>person</mat-icon>
+      <span>Profile</span>
+    </button>
+    <button mat-menu-item (click)="goToSettings()">
+      <mat-icon>settings</mat-icon>
+      <span>Settings</span>
+    </button>
+  </div>
+
+  <mat-divider></mat-divider>
+
+  <!-- Sign Out -->
+  <div class="menu-section">
+    <button mat-menu-item (click)="signOut()">
+      <mat-icon>logout</mat-icon>
+      <span>Sign out</span>
+    </button>
+  </div>
+</mat-menu>

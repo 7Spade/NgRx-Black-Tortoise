@@ -1,5 +1,4 @@
 import { Injectable, inject } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
 import { AuthStore } from '@application/auth/stores/auth.store';
 import { AUTH_REPOSITORY } from '@application/tokens';
 
@@ -45,7 +44,7 @@ export class AppInitializerService {
    * Initialize the application (Zone-less compatible)
    * 
    * This method:
-   * 1. Waits for Firebase Auth to emit its initial state
+   * 1. Waits for Firebase Auth to emit its initial state via callback
    * 2. Synchronizes the user state to AuthStore via signal update
    * 3. Returns a Promise that resolves when initialization is complete
    * 
@@ -63,8 +62,13 @@ export class AppInitializerService {
 
       // Wait for Firebase Auth to emit its first value (authenticated or null)
       // This ensures we know the auth state before the app renders
-      // firstValueFrom converts Observable to Promise for APP_INITIALIZER
-      const user = await firstValueFrom(this.authRepository.authState$);
+      // Using Promise wrapper around onAuthStateChanged callback
+      const user = await new Promise<any>((resolve) => {
+        const unsubscribe = this.authRepository.onAuthStateChanged((authUser) => {
+          unsubscribe(); // Unsubscribe after first emission
+          resolve(authUser);
+        });
+      });
 
       console.log('[AppInitializer] Firebase Auth state received:', user ? 'Authenticated' : 'Unauthenticated');
 
