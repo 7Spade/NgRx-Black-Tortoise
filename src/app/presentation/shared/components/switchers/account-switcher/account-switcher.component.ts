@@ -185,23 +185,29 @@ export class AccountSwitcherComponent implements OnInit {
   }
   
   /**
-   * Get human-readable label for account type
-   * 
-   * NOTE: This is a pure presentation helper (icon mapping).
-   * Business logic lives in AccountSwitchUseCase.
+   * Navigate to user profile
    */
-  private getAccountTypeLabel(type: string): string {
-    switch (type) {
-      case 'personal':
-        return 'Personal Account';
-      case 'organization':
-        return 'Organization';
-      case 'team':
-        return 'Team';
-      case 'partner':
-        return 'Partner';
-      default:
-        return 'Account';
-    }
+  goToProfile(): void {
+    // TODO: Implement navigation via Router
+    console.log('Navigate to profile');
+  }
+
+  /**
+   * Navigate to settings
+   */
+  goToSettings(): void {
+    // TODO: Implement navigation via Router
+    console.log('Navigate to settings');
+  }
+
+  /**
+   * Sign out the current user
+   * 
+   * DELEGATION RULE:
+   * ================
+   * Delegates to AccountFacade.logout() for coordinated logout.
+   */
+  signOut(): void {
+    this.facade.logout();
   }
 }
